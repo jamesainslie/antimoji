@@ -37,7 +37,7 @@ profiles:
 		config := result.Unwrap()
 		assert.Equal(t, "0.1.0", config.Version)
 		assert.Contains(t, config.Profiles, "default")
-		
+
 		profile := config.Profiles["default"]
 		assert.True(t, profile.Recursive)
 		assert.True(t, profile.UnicodeEmojis)
@@ -50,7 +50,7 @@ profiles:
 
 	t.Run("handles non-existent config file", func(t *testing.T) {
 		configPath := filepath.Join(tmpDir, "nonexistent.yaml")
-		
+
 		result := LoadConfig(configPath)
 		assert.True(t, result.IsErr())
 		assert.Contains(t, result.Error().Error(), "no such file")
@@ -122,7 +122,7 @@ func TestDefaultConfig(t *testing.T) {
 func TestGetProfile(t *testing.T) {
 	t.Run("returns existing profile", func(t *testing.T) {
 		config := DefaultConfig()
-		
+
 		result := GetProfile(config, "default")
 		assert.True(t, result.IsOk())
 
@@ -132,7 +132,7 @@ func TestGetProfile(t *testing.T) {
 
 	t.Run("handles non-existent profile", func(t *testing.T) {
 		config := DefaultConfig()
-		
+
 		result := GetProfile(config, "nonexistent")
 		assert.True(t, result.IsErr())
 		assert.Contains(t, result.Error().Error(), "profile not found")
@@ -140,7 +140,7 @@ func TestGetProfile(t *testing.T) {
 
 	t.Run("returns default profile when name is empty", func(t *testing.T) {
 		config := DefaultConfig()
-		
+
 		result := GetProfile(config, "")
 		assert.True(t, result.IsOk())
 
@@ -152,7 +152,7 @@ func TestGetProfile(t *testing.T) {
 func TestValidateConfig(t *testing.T) {
 	t.Run("validates correct config", func(t *testing.T) {
 		config := DefaultConfig()
-		
+
 		result := ValidateConfig(config)
 		assert.True(t, result.IsOk())
 	})
@@ -160,7 +160,7 @@ func TestValidateConfig(t *testing.T) {
 	t.Run("rejects invalid version format", func(t *testing.T) {
 		config := DefaultConfig()
 		config.Version = "invalid-version"
-		
+
 		result := ValidateConfig(config)
 		assert.True(t, result.IsErr())
 		assert.Contains(t, result.Error().Error(), "invalid version")
@@ -171,7 +171,7 @@ func TestValidateConfig(t *testing.T) {
 		profile := config.Profiles["default"]
 		profile.BufferSize = -1
 		config.Profiles["default"] = profile
-		
+
 		result := ValidateConfig(config)
 		assert.True(t, result.IsErr())
 		assert.Contains(t, result.Error().Error(), "buffer size")
@@ -182,7 +182,7 @@ func TestValidateConfig(t *testing.T) {
 		profile := config.Profiles["default"]
 		profile.MaxFileSize = -1
 		config.Profiles["default"] = profile
-		
+
 		result := ValidateConfig(config)
 		assert.True(t, result.IsErr())
 		assert.Contains(t, result.Error().Error(), "max file size")
@@ -233,16 +233,16 @@ func TestMergeProfiles(t *testing.T) {
 		}
 
 		override := Profile{
-			Recursive:    false, // Override
-			UnicodeEmojis: true, // Explicitly set to maintain
-			BufferSize:   2048,  // Override
-			OutputFormat: "json", // Override
+			Recursive:     false,  // Override
+			UnicodeEmojis: true,   // Explicitly set to maintain
+			BufferSize:    2048,   // Override
+			OutputFormat:  "json", // Override
 		}
 
 		merged := MergeProfiles(base, override)
-		assert.False(t, merged.Recursive)     // Overridden
-		assert.True(t, merged.UnicodeEmojis)  // Explicitly set in override
-		assert.Equal(t, 2048, merged.BufferSize) // Overridden
+		assert.False(t, merged.Recursive)            // Overridden
+		assert.True(t, merged.UnicodeEmojis)         // Explicitly set in override
+		assert.Equal(t, 2048, merged.BufferSize)     // Overridden
 		assert.Equal(t, "json", merged.OutputFormat) // Overridden
 	})
 
@@ -257,8 +257,8 @@ func TestMergeProfiles(t *testing.T) {
 
 		merged := MergeProfiles(base, override)
 		// With our current implementation, boolean zero values (false) will override
-		assert.False(t, merged.Recursive)     // Zero value overrides
-		assert.False(t, merged.UnicodeEmojis) // Zero value overrides  
+		assert.False(t, merged.Recursive)                   // Zero value overrides
+		assert.False(t, merged.UnicodeEmojis)               // Zero value overrides
 		assert.Equal(t, base.BufferSize, merged.BufferSize) // Non-zero values preserved
 	})
 }
@@ -299,7 +299,7 @@ func TestValidateProfile(t *testing.T) {
 
 	t.Run("allows valid output formats", func(t *testing.T) {
 		validFormats := []string{"table", "json", "csv", ""}
-		
+
 		for _, format := range validFormats {
 			config := DefaultConfig()
 			profile := config.Profiles["default"]

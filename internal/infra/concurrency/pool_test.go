@@ -259,7 +259,7 @@ func TestProcessFiles_Integration(t *testing.T) {
 				return types.Err[types.ProcessResult](fmt.Errorf("processing error"))
 			}
 			return types.Ok(types.ProcessResult{
-				FilePath: filePath,
+				FilePath:        filePath,
 				DetectionResult: types.DetectionResult{Success: true},
 			})
 		}
@@ -298,7 +298,7 @@ func TestWorkerPool_EdgeCases(t *testing.T) {
 
 	t.Run("handles stop when not running", func(t *testing.T) {
 		pool := NewWorkerPool(1)
-		
+
 		// Should not panic or error
 		pool.Stop()
 		assert.False(t, pool.IsRunning())
@@ -364,7 +364,7 @@ func TestWorker_ProcessJob(t *testing.T) {
 
 			result := <-pool.ResultQueue()
 			assert.Equal(t, tc.name, result.JobID)
-			
+
 			if tc.expectError {
 				assert.Error(t, result.Error)
 				assert.False(t, result.Success)

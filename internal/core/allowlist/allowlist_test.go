@@ -11,10 +11,10 @@ import (
 func TestNewAllowlist(t *testing.T) {
 	t.Run("creates allowlist with valid patterns", func(t *testing.T) {
 		patterns := []string{"✅", "❌", "⚠️"}
-		
+
 		result := NewAllowlist(patterns)
 		assert.True(t, result.IsOk())
-		
+
 		allowlist := result.Unwrap()
 		assert.Len(t, allowlist.patterns, 3)
 		assert.Equal(t, patterns, allowlist.originalPatterns)
@@ -22,10 +22,10 @@ func TestNewAllowlist(t *testing.T) {
 
 	t.Run("handles empty patterns", func(t *testing.T) {
 		patterns := []string{}
-		
+
 		result := NewAllowlist(patterns)
 		assert.True(t, result.IsOk())
-		
+
 		allowlist := result.Unwrap()
 		assert.Empty(t, allowlist.patterns)
 		assert.Empty(t, allowlist.originalPatterns)
@@ -33,11 +33,11 @@ func TestNewAllowlist(t *testing.T) {
 
 	t.Run("normalizes Unicode emojis", func(t *testing.T) {
 		// Test with emojis that might have different Unicode representations
-		patterns := []string{"✅", "❌️", "⚠️"}  // Some with variation selectors
-		
+		patterns := []string{"✅", "❌️", "⚠️"} // Some with variation selectors
+
 		result := NewAllowlist(patterns)
 		assert.True(t, result.IsOk())
-		
+
 		allowlist := result.Unwrap()
 		assert.True(t, allowlist.IsAllowed("✅"))
 		assert.True(t, allowlist.IsAllowed("❌"))
@@ -46,10 +46,10 @@ func TestNewAllowlist(t *testing.T) {
 
 	t.Run("handles duplicate patterns", func(t *testing.T) {
 		patterns := []string{"✅", "✅", "❌", "✅"} // Duplicates
-		
+
 		result := NewAllowlist(patterns)
 		assert.True(t, result.IsOk())
-		
+
 		allowlist := result.Unwrap()
 		// Should deduplicate internally
 		assert.True(t, allowlist.IsAllowed("✅"))
@@ -91,7 +91,7 @@ func TestAllowlist_GetPatterns(t *testing.T) {
 	t.Run("returns original patterns", func(t *testing.T) {
 		patterns := []string{"✅", "❌", ":smile:"}
 		allowlist := NewAllowlist(patterns).Unwrap()
-		
+
 		result := allowlist.GetPatterns()
 		assert.Equal(t, patterns, result)
 	})
@@ -99,10 +99,10 @@ func TestAllowlist_GetPatterns(t *testing.T) {
 	t.Run("returns copy not reference", func(t *testing.T) {
 		patterns := []string{"✅", "❌"}
 		allowlist := NewAllowlist(patterns).Unwrap()
-		
+
 		returned := allowlist.GetPatterns()
 		returned[0] = "modified" // Modify the returned slice
-		
+
 		// Original should be unchanged
 		original := allowlist.GetPatterns()
 		assert.Equal(t, "✅", original[0])
@@ -117,11 +117,11 @@ func TestApplyAllowlist(t *testing.T) {
 	t.Run("filters out non-allowed emojis", func(t *testing.T) {
 		detectionResult := types.DetectionResult{
 			Emojis: []types.EmojiMatch{
-				{Emoji: "✅", Category: types.CategoryUnicode},    // Allowed
-				{Emoji: "😀", Category: types.CategoryUnicode},    // Not allowed
+				{Emoji: "✅", Category: types.CategoryUnicode},          // Allowed
+				{Emoji: "😀", Category: types.CategoryUnicode},          // Not allowed
 				{Emoji: ":thumbs_up:", Category: types.CategoryCustom}, // Allowed
-				{Emoji: ":)", Category: types.CategoryEmoticon},   // Not allowed
-				{Emoji: "❌", Category: types.CategoryUnicode},    // Allowed
+				{Emoji: ":)", Category: types.CategoryEmoticon},        // Not allowed
+				{Emoji: "❌", Category: types.CategoryUnicode},          // Allowed
 			},
 			TotalCount:  5,
 			UniqueCount: 5,
@@ -134,7 +134,7 @@ func TestApplyAllowlist(t *testing.T) {
 		filtered := result.Unwrap()
 		assert.Len(t, filtered.Emojis, 3) // Only allowed emojis
 		assert.Equal(t, 3, filtered.TotalCount)
-		
+
 		// Check that only allowed emojis remain
 		allowedEmojis := make(map[string]bool)
 		for _, emoji := range filtered.Emojis {
@@ -224,7 +224,7 @@ func TestApplyAllowlist(t *testing.T) {
 
 		filtered := result.Unwrap()
 		assert.Len(t, filtered.Emojis, 1)
-		
+
 		emoji := filtered.Emojis[0]
 		assert.Equal(t, "✅", emoji.Emoji)
 		assert.Equal(t, 5, emoji.Start)
@@ -241,7 +241,7 @@ func TestAllowlist_Properties(t *testing.T) {
 
 	t.Run("allowlist is deterministic", func(t *testing.T) {
 		testEmojis := []string{"✅", "😀", ":smile:", ":)", "❌"}
-		
+
 		// Run multiple times and ensure consistent results
 		for i := 0; i < 5; i++ {
 			for _, emoji := range testEmojis {
@@ -267,7 +267,7 @@ func TestAllowlist_Properties(t *testing.T) {
 		}
 
 		filtered := ApplyAllowlist(detectionResult, allowlist).Unwrap()
-		
+
 		// Filtering should never increase the number of emojis
 		assert.True(t, filtered.TotalCount <= detectionResult.TotalCount)
 		assert.True(t, len(filtered.Emojis) <= len(detectionResult.Emojis))
@@ -327,13 +327,13 @@ func TestMerge(t *testing.T) {
 
 	t.Run("handles nil allowlists", func(t *testing.T) {
 		allowlist1 := NewAllowlist([]string{"✅"}).Unwrap()
-		
+
 		merged1 := Merge(nil, allowlist1)
 		assert.Equal(t, allowlist1.Size(), merged1.Size())
-		
+
 		merged2 := Merge(allowlist1, nil)
 		assert.Equal(t, allowlist1.Size(), merged2.Size())
-		
+
 		merged3 := Merge(nil, nil)
 		assert.True(t, merged3.IsEmpty())
 	})
@@ -356,7 +356,7 @@ func TestNormalizeEmoji(t *testing.T) {
 		// These test cases would be internal if normalizeEmoji was exported
 		// For now, we test through the public API
 		allowlist := NewAllowlist([]string{"❌️"}).Unwrap() // With variation selector
-		
+
 		// Should match both with and without variation selector
 		assert.True(t, allowlist.IsAllowed("❌"))
 		assert.True(t, allowlist.IsAllowed("❌️"))
@@ -382,7 +382,7 @@ func TestApplyAllowlist_EdgeCases(t *testing.T) {
 
 	t.Run("preserves detection metadata", func(t *testing.T) {
 		allowlist := NewAllowlist([]string{"✅"}).Unwrap()
-		
+
 		detectionResult := types.DetectionResult{
 			Emojis:         []types.EmojiMatch{{Emoji: "✅", Category: types.CategoryUnicode}},
 			TotalCount:     1,
@@ -406,7 +406,7 @@ func TestApplyAllowlist_EdgeCases(t *testing.T) {
 func BenchmarkAllowlist_IsAllowed(b *testing.B) {
 	patterns := []string{"✅", "❌", "⚠️", ":smile:", ":frown:", ":thumbs_up:", ":heart:"}
 	allowlist := NewAllowlist(patterns).Unwrap()
-	
+
 	testEmojis := []string{"✅", "😀", ":smile:", ":)", "❌", "🚀", ":thumbs_up:", "😃"}
 
 	b.ResetTimer()
@@ -470,11 +470,11 @@ func BenchmarkNewAllowlist(b *testing.B) {
 // Example usage for documentation
 func ExampleNewAllowlist() {
 	patterns := []string{"✅", "❌", ":thumbs_up:"}
-	
+
 	result := NewAllowlist(patterns)
 	if result.IsOk() {
 		allowlist := result.Unwrap()
-		
+
 		fmt.Println("Is ✅ allowed?", allowlist.IsAllowed("✅"))
 		fmt.Println("Is 😀 allowed?", allowlist.IsAllowed("😀"))
 	}
@@ -503,7 +503,7 @@ func ExampleApplyAllowlist() {
 	result := ApplyAllowlist(detectionResult, allowlist)
 	if result.IsOk() {
 		filtered := result.Unwrap()
-		fmt.Printf("Original: %d emojis, Filtered: %d emojis\n", 
+		fmt.Printf("Original: %d emojis, Filtered: %d emojis\n",
 			detectionResult.TotalCount, filtered.TotalCount)
 	}
 	// Output: Original: 3 emojis, Filtered: 2 emojis

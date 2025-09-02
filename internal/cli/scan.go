@@ -8,26 +8,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/antimoji/antimoji/internal/config"
 	"github.com/antimoji/antimoji/internal/core/allowlist"
 	"github.com/antimoji/antimoji/internal/core/detector"
 	"github.com/antimoji/antimoji/internal/core/processor"
 	"github.com/antimoji/antimoji/internal/types"
+	"github.com/spf13/cobra"
 )
 
 // ScanOptions holds the options for the scan command.
 type ScanOptions struct {
-	Recursive      bool
-	IncludePattern string
-	ExcludePattern string
-	Format         string
-	CountOnly      bool
-	Threshold      int
+	Recursive       bool
+	IncludePattern  string
+	ExcludePattern  string
+	Format          string
+	CountOnly       bool
+	Threshold       int
 	IgnoreAllowlist bool
-	Stats          bool
-	Benchmark      bool
-	Workers        int
+	Stats           bool
+	Benchmark       bool
+	Workers         int
 }
 
 // NewScanCommand creates the scan command.
@@ -125,7 +125,7 @@ func runScan(cmd *cobra.Command, args []string, opts *ScanOptions) error {
 			return fmt.Errorf("failed to create allowlist: %w", allowlistResult.Error())
 		}
 		emojiAllowlist = allowlistResult.Unwrap()
-		
+
 		if verbose {
 			fmt.Fprintf(os.Stderr, "Using allowlist with %d patterns\n", emojiAllowlist.Size())
 		}
@@ -225,7 +225,7 @@ func discoverFiles(args []string, opts *ScanOptions, profile config.Profile) ([]
 // shouldIgnoreDirectory checks if a directory should be ignored.
 func shouldIgnoreDirectory(dirPath string, ignoreList []string) bool {
 	dirName := filepath.Base(dirPath)
-	
+
 	for _, pattern := range ignoreList {
 		if matched, _ := filepath.Match(pattern, dirName); matched {
 			return true
@@ -234,7 +234,7 @@ func shouldIgnoreDirectory(dirPath string, ignoreList []string) bool {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -325,8 +325,8 @@ func displayTableFormat(results []types.ProcessResult, opts *ScanOptions, durati
 
 	for _, result := range results {
 		if result.Error != nil {
-			fmt.Printf("%-50s %-8s %-8s %-10s\n", 
-				truncateString(result.FilePath, 50), 
+			fmt.Printf("%-50s %-8s %-8s %-10s\n",
+				truncateString(result.FilePath, 50),
 				"-", "-", "ERROR")
 			errorFiles++
 			continue
@@ -372,7 +372,7 @@ func displayJSONFormat(results []types.ProcessResult, opts *ScanOptions, duratio
 // displayCSVFormat displays results in CSV format.
 func displayCSVFormat(results []types.ProcessResult, opts *ScanOptions, duration time.Duration) error {
 	fmt.Println("file_path,emoji_count,unique_count,status")
-	
+
 	for _, result := range results {
 		status := "ok"
 		if result.Error != nil {
@@ -387,7 +387,7 @@ func displayCSVFormat(results []types.ProcessResult, opts *ScanOptions, duration
 			result.DetectionResult.UniqueCount,
 			status)
 	}
-	
+
 	return nil
 }
 
