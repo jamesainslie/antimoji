@@ -9,8 +9,8 @@
     <a href="https://github.com/jamesainslie/antimoji/actions/workflows/nightly.yml"><img src="https://github.com/jamesainslie/antimoji/actions/workflows/nightly.yml/badge.svg" alt="Nightly Build"></a>
     <br/>
     <a href="https://golang.org"><img src="https://img.shields.io/github/go-mod/go-version/jamesainslie/antimoji?color=00ADD8&logo=go" alt="Go Version"></a>
-    <a href="https://github.com/jamesainslie/antimoji/releases"><img src="https://img.shields.io/github/v/release/jamesainslie/antimoji?color=blue&logo=github" alt="Latest Release"></a>
-    <a href="https://github.com/jamesainslie/antimoji/releases"><img src="https://img.shields.io/github/downloads/jamesainslie/antimoji/total?color=green&logo=github" alt="Total Downloads"></a>
+    <a href="https://github.com/jamesainslie/antimoji/releases"><img src="https://img.shields.io/github/v/release/jamesainslie/antimoji?color=blue&logo=github&cache=1756852585" alt="Latest Release"></a>
+    <a href="https://github.com/jamesainslie/antimoji/releases"><img src="https://img.shields.io/github/downloads/jamesainslie/antimoji/total?color=green&logo=github&cache=1756852585" alt="Total Downloads"></a>
     <br/>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/jamesainslie/antimoji?color=blue" alt="License"></a>
     <a href="https://codecov.io/gh/jamesainslie/antimoji"><img src="https://img.shields.io/codecov/c/github/jamesainslie/antimoji?logo=codecov" alt="Coverage"></a>
