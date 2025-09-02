@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/antimoji/antimoji/internal/config"
+	"github.com/antimoji/antimoji/internal/core/allowlist"
 	"github.com/antimoji/antimoji/internal/core/detector"
 	"github.com/antimoji/antimoji/internal/core/processor"
 	"github.com/antimoji/antimoji/internal/types"
@@ -114,8 +115,34 @@ func runScan(cmd *cobra.Command, args []string, opts *ScanOptions) error {
 	// Create emoji patterns
 	patterns := detector.DefaultEmojiPatterns()
 
+	// Create allowlist if configured and not ignored
+	var emojiAllowlist *allowlist.Allowlist
+	if !opts.IgnoreAllowlist && len(profile.EmojiAllowlist) > 0 {
+		allowlistResult := allowlist.NewAllowlist(profile.EmojiAllowlist)
+		if allowlistResult.IsErr() {
+			return fmt.Errorf("failed to create allowlist: %w", allowlistResult.Error())
+		}
+		emojiAllowlist = allowlistResult.Unwrap()
+		
+		if verbose {
+			fmt.Fprintf(os.Stderr, "Using allowlist with %d patterns\n", emojiAllowlist.Size())
+		}
+	}
+
 	// Process files
 	results := processor.ProcessFiles(filePaths, patterns, processingConfig)
+
+	// Apply allowlist filtering to results
+	if emojiAllowlist != nil {
+		for i, result := range results {
+			if result.Error == nil && result.DetectionResult.Success {
+				filteredResult := allowlist.ApplyAllowlist(result.DetectionResult, emojiAllowlist)
+				if filteredResult.IsOk() {
+					results[i].DetectionResult = filteredResult.Unwrap()
+				}
+			}
+		}
+	}
 
 	// Display results
 	if err := displayResults(results, opts, time.Since(startTime)); err != nil {
