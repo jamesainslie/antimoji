@@ -86,7 +86,7 @@ func TestDetectionResult(t *testing.T) {
 
 	t.Run("Finalize calculates unique count and sets success", func(t *testing.T) {
 		result := DetectionResult{}
-		
+
 		// Add duplicate emojis
 		result.AddEmoji(EmojiMatch{Emoji: "😀", Category: CategoryUnicode})
 		result.AddEmoji(EmojiMatch{Emoji: "😃", Category: CategoryUnicode})
@@ -126,17 +126,17 @@ func TestUnicodeRange(t *testing.T) {
 	t.Run("Contains returns true for rune in range", func(t *testing.T) {
 		urange := UnicodeRange{Start: 0x1F600, End: 0x1F64F, Name: "Test"}
 
-		assert.True(t, urange.Contains(0x1F600))  // Start boundary
-		assert.True(t, urange.Contains(0x1F620))  // Middle
-		assert.True(t, urange.Contains(0x1F64F))  // End boundary
+		assert.True(t, urange.Contains(0x1F600)) // Start boundary
+		assert.True(t, urange.Contains(0x1F620)) // Middle
+		assert.True(t, urange.Contains(0x1F64F)) // End boundary
 	})
 
 	t.Run("Contains returns false for rune outside range", func(t *testing.T) {
 		urange := UnicodeRange{Start: 0x1F600, End: 0x1F64F, Name: "Test"}
 
-		assert.False(t, urange.Contains(0x1F5FF))  // Before start
-		assert.False(t, urange.Contains(0x1F650))  // After end
-		assert.False(t, urange.Contains(0x0041))   // Way outside (letter A)
+		assert.False(t, urange.Contains(0x1F5FF)) // Before start
+		assert.False(t, urange.Contains(0x1F650)) // After end
+		assert.False(t, urange.Contains(0x0041))  // Way outside (letter A)
 	})
 }
 
@@ -255,7 +255,7 @@ func BenchmarkDetectionResult_Finalize(b *testing.B) {
 	// Create result with many duplicate emojis
 	result := DetectionResult{}
 	emojis := []string{"😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣"}
-	
+
 	for i := 0; i < 100; i++ {
 		for _, emoji := range emojis {
 			result.AddEmoji(EmojiMatch{
@@ -286,7 +286,7 @@ func BenchmarkUnicodeRange_Contains(b *testing.B) {
 // Example usage for documentation
 func ExampleDetectionResult_AddEmoji() {
 	result := DetectionResult{}
-	
+
 	match := EmojiMatch{
 		Emoji:    "😀",
 		Start:    5,
@@ -295,10 +295,10 @@ func ExampleDetectionResult_AddEmoji() {
 		Column:   6,
 		Category: CategoryUnicode,
 	}
-	
+
 	result.AddEmoji(match)
 	result.Finalize()
-	
+
 	fmt.Printf("Found %d emojis (%d unique)\n", result.TotalCount, result.UniqueCount)
 	// Output: Found 1 emojis (1 unique)
 }
@@ -310,7 +310,7 @@ func ExampleUnicodeRange_Contains() {
 		End:   0x1F64F,
 		Name:  "Emoticons",
 	}
-	
+
 	// Test if a grinning face emoji is in the range
 	grinningFace := rune(0x1F600) // 😀
 	fmt.Printf("Is 😀 an emoticon? %t\n", emoticons.Contains(grinningFace))

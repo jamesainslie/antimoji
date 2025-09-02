@@ -18,32 +18,32 @@ func DetectEmojis(content []byte, patterns types.EmojiPatterns) types.Result[typ
 
 	result := types.DetectionResult{}
 	contentStr := string(content)
-	
+
 	// Track line and column positions
 	line := 1
 	column := 1
 	bytePos := 0
-	
+
 	// Convert content to runes for proper Unicode handling
 	runes := []rune(contentStr)
-	
+
 	for i := 0; i < len(runes); i++ {
 		r := runes[i]
 		runeStart := bytePos
 		runeWidth := utf8.RuneLen(r)
-		
+
 		// Check for Unicode emojis
 		if isUnicodeEmoji(r, patterns.UnicodeRanges) {
 			// Handle multi-rune emojis (like skin tone modifiers)
 			emojiEnd := i + 1
 			emojiWidth := runeWidth
-			
+
 			// Check for skin tone modifiers and ZWJ sequences
 			for emojiEnd < len(runes) && isEmojiModifier(runes[emojiEnd]) {
 				emojiWidth += utf8.RuneLen(runes[emojiEnd])
 				emojiEnd++
 			}
-			
+
 			emoji := string(runes[i:emojiEnd])
 			match := types.EmojiMatch{
 				Emoji:    emoji,
@@ -54,7 +54,7 @@ func DetectEmojis(content []byte, patterns types.EmojiPatterns) types.Result[typ
 				Category: types.CategoryUnicode,
 			}
 			result.AddEmoji(match)
-			
+
 			// Skip processed runes
 			i = emojiEnd - 1
 			bytePos += emojiWidth
@@ -69,25 +69,25 @@ func DetectEmojis(content []byte, patterns types.EmojiPatterns) types.Result[typ
 			}
 		}
 	}
-	
+
 	// Detect text emoticons
 	result = detectEmoticons(contentStr, patterns.EmoticonPatterns, result)
-	
+
 	// Detect custom patterns
 	result = detectCustomPatterns(contentStr, patterns.CustomPatterns, result)
-	
+
 	// Sort emojis by position to ensure consistent ordering
 	sort.Slice(result.Emojis, func(i, j int) bool {
 		return result.Emojis[i].Start < result.Emojis[j].Start
 	})
-	
+
 	// Remove overlapping detections (keep the first one found)
 	result.Emojis = removeOverlaps(result.Emojis)
 	result.TotalCount = len(result.Emojis)
-	
+
 	result.ProcessedBytes = int64(len(content))
 	result.Finalize()
-	
+
 	return types.Ok(result)
 }
 
@@ -162,7 +162,7 @@ func detectEmoticons(content string, patterns []string, result types.DetectionRe
 			if index == -1 {
 				break
 			}
-			
+
 			line, column := calculatePosition(content, index)
 			match := types.EmojiMatch{
 				Emoji:    pattern,
@@ -185,11 +185,11 @@ func detectCustomPatterns(content string, patterns []string, result types.Detect
 		// Use regex for custom patterns to ensure word boundaries
 		regex := regexp.MustCompile(regexp.QuoteMeta(pattern))
 		matches := regex.FindAllStringIndex(content, -1)
-		
+
 		for _, match := range matches {
 			start, end := match[0], match[1]
 			line, column := calculatePosition(content, start)
-			
+
 			emojiMatch := types.EmojiMatch{
 				Emoji:    pattern,
 				Start:    start,
@@ -209,7 +209,7 @@ func findEmoticonAt(content, pattern string, start int) int {
 	if start >= len(content) {
 		return -1
 	}
-	
+
 	for i := start; i <= len(content)-len(pattern); i++ {
 		if content[i:i+len(pattern)] == pattern {
 			// Check if it's not part of a larger word (basic boundary check)
@@ -229,7 +229,7 @@ func findEmoticonAt(content, pattern string, start int) int {
 func calculatePosition(content string, bytePos int) (line, column int) {
 	line = 1
 	column = 1
-	
+
 	for i, r := range content {
 		if i >= bytePos {
 			break
@@ -254,20 +254,20 @@ func removeOverlaps(emojis []types.EmojiMatch) []types.EmojiMatch {
 	if len(emojis) <= 1 {
 		return emojis
 	}
-	
+
 	result := make([]types.EmojiMatch, 0, len(emojis))
 	result = append(result, emojis[0])
-	
+
 	for i := 1; i < len(emojis); i++ {
 		current := emojis[i]
 		lastAdded := result[len(result)-1]
-		
+
 		// Check if current emoji overlaps with the last added one
 		if current.Start >= lastAdded.End {
 			result = append(result, current)
 		}
 		// If they overlap, skip the current one (keep the first)
 	}
-	
+
 	return result
 }

@@ -22,10 +22,10 @@ func TestDetectEmojis(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:    "plain text without emojis",
-			content: "Hello world! This is plain text.",
+			name:     "plain text without emojis",
+			content:  "Hello world! This is plain text.",
 			expected: []types.EmojiMatch{},
-			wantErr: false,
+			wantErr:  false,
 		},
 		{
 			name:    "single unicode emoji",
@@ -203,7 +203,7 @@ func TestDetectEmojis(t *testing.T) {
 			assert.True(t, result.IsOk())
 			detection := result.Unwrap()
 			assert.Equal(t, len(tt.expected), len(detection.Emojis))
-			
+
 			for i, expected := range tt.expected {
 				if i < len(detection.Emojis) {
 					actual := detection.Emojis[i]

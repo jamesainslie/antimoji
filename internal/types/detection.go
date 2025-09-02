@@ -7,19 +7,19 @@ import "time"
 type EmojiMatch struct {
 	// Emoji is the actual emoji string (e.g., "😀", "👍🏽")
 	Emoji string `json:"emoji"`
-	
+
 	// Start is the byte position where the emoji begins
 	Start int `json:"start"`
-	
+
 	// End is the byte position where the emoji ends (exclusive)
 	End int `json:"end"`
-	
+
 	// Line is the line number where the emoji appears (1-based)
 	Line int `json:"line"`
-	
+
 	// Column is the column position where the emoji starts (1-based)
 	Column int `json:"column"`
-	
+
 	// Category describes the type of emoji (Unicode, Emoticon, Custom)
 	Category EmojiCategory `json:"category"`
 }
@@ -30,10 +30,10 @@ type EmojiCategory string
 const (
 	// CategoryUnicode represents Unicode emoji characters (e.g., 😀, 👍)
 	CategoryUnicode EmojiCategory = "unicode"
-	
+
 	// CategoryEmoticon represents text-based emoticons (e.g., :), :()
 	CategoryEmoticon EmojiCategory = "emoticon"
-	
+
 	// CategoryCustom represents custom emoji patterns (e.g., :smile:, :thumbs_up:)
 	CategoryCustom EmojiCategory = "custom"
 )
@@ -42,19 +42,19 @@ const (
 type DetectionResult struct {
 	// Emojis contains all detected emoji matches
 	Emojis []EmojiMatch `json:"emojis"`
-	
+
 	// TotalCount is the total number of emojis detected
 	TotalCount int `json:"total_count"`
-	
+
 	// UniqueCount is the number of unique emojis detected
 	UniqueCount int `json:"unique_count"`
-	
+
 	// ProcessedBytes is the number of bytes that were processed
 	ProcessedBytes int64 `json:"processed_bytes"`
-	
+
 	// Duration is how long the detection took
 	Duration time.Duration `json:"duration"`
-	
+
 	// Success indicates if detection completed successfully
 	Success bool `json:"success"`
 }
@@ -90,10 +90,10 @@ func (dr *DetectionResult) Finalize() {
 type EmojiPatterns struct {
 	// UnicodeRanges contains Unicode ranges for emoji detection
 	UnicodeRanges []UnicodeRange
-	
+
 	// EmoticonPatterns contains regex patterns for text emoticons
 	EmoticonPatterns []string
-	
+
 	// CustomPatterns contains patterns for custom emoji syntax
 	CustomPatterns []string
 }
@@ -114,16 +114,16 @@ func (ur UnicodeRange) Contains(r rune) bool {
 type ProcessingConfig struct {
 	// EnableUnicode controls Unicode emoji detection
 	EnableUnicode bool
-	
-	// EnableEmoticons controls text emoticon detection  
+
+	// EnableEmoticons controls text emoticon detection
 	EnableEmoticons bool
-	
+
 	// EnableCustom controls custom pattern detection
 	EnableCustom bool
-	
+
 	// MaxFileSize limits the size of files to process (in bytes)
 	MaxFileSize int64
-	
+
 	// BufferSize controls the size of read buffers
 	BufferSize int
 }
@@ -135,7 +135,7 @@ func DefaultProcessingConfig() ProcessingConfig {
 		EnableEmoticons: true,
 		EnableCustom:    true,
 		MaxFileSize:     100 * 1024 * 1024, // 100MB
-		BufferSize:      64 * 1024,          // 64KB
+		BufferSize:      64 * 1024,         // 64KB
 	}
 }
 
@@ -147,9 +147,9 @@ type FileInfo struct {
 
 // ProcessResult contains the result of processing a file.
 type ProcessResult struct {
-	FilePath       string          `json:"file_path"`
+	FilePath        string          `json:"file_path"`
 	DetectionResult DetectionResult `json:"detection_result"`
-	Error          error           `json:"error,omitempty"`
-	Modified       bool            `json:"modified"`
-	BackupPath     string          `json:"backup_path,omitempty"`
+	Error           error           `json:"error,omitempty"`
+	Modified        bool            `json:"modified"`
+	BackupPath      string          `json:"backup_path,omitempty"`
 }
