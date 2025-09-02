@@ -22,11 +22,12 @@ check_url() {
     local url="$1"
     local description="$2"
     
-    if curl -s --head "$url" | head -n 1 | grep -q "200 OK"; then
-        echo -e "${GREEN}✓${NC} $description: Working"
+    local status=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+    if [ "$status" = "200" ] || [ "$status" = "307" ] || [ "$status" = "302" ]; then
+        echo -e "${GREEN}✓${NC} $description: Working (HTTP $status)"
         return 0
     else
-        echo -e "${RED}✗${NC} $description: Not working"
+        echo -e "${RED}✗${NC} $description: Not working (HTTP $status)"
         echo "  URL: $url"
         return 1
     fi
