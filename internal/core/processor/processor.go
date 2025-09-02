@@ -3,9 +3,11 @@ package processor
 
 import (
 	"errors"
+	"runtime"
 	"time"
 
 	"github.com/antimoji/antimoji/internal/core/detector"
+	"github.com/antimoji/antimoji/internal/infra/concurrency"
 	"github.com/antimoji/antimoji/internal/infra/fs"
 	"github.com/antimoji/antimoji/internal/types"
 )
@@ -79,7 +81,14 @@ func ProcessFile(filePath string, patterns types.EmojiPatterns, config types.Pro
 }
 
 // ProcessFiles processes multiple files and returns results for all files.
+// Uses concurrent processing for improved performance with multiple files.
 func ProcessFiles(filePaths []string, patterns types.EmojiPatterns, config types.ProcessingConfig) []types.ProcessResult {
+	// Use concurrent processing for multiple files
+	if len(filePaths) > 1 {
+		return ProcessFilesConcurrently(filePaths, patterns, config, 0) // Auto-detect workers
+	}
+	
+	// Single file - use direct processing
 	results := make([]types.ProcessResult, 0, len(filePaths))
 	
 	for _, filePath := range filePaths {
@@ -88,6 +97,46 @@ func ProcessFiles(filePaths []string, patterns types.EmojiPatterns, config types
 			results = append(results, processResult.Unwrap())
 		} else {
 			// This shouldn't happen with current implementation, but handle it
+			errorResult := types.ProcessResult{
+				FilePath: filePath,
+				Error:    processResult.Error(),
+				Modified: false,
+			}
+			results = append(results, errorResult)
+		}
+	}
+	
+	return results
+}
+
+// ProcessFilesConcurrently processes multiple files using worker pool for better performance.
+func ProcessFilesConcurrently(filePaths []string, patterns types.EmojiPatterns, config types.ProcessingConfig, workerCount int) []types.ProcessResult {
+	if workerCount <= 0 {
+		workerCount = runtime.NumCPU()
+	}
+	
+	// For small numbers of files, sequential might be faster due to overhead
+	if len(filePaths) < workerCount {
+		return processFilesSequentially(filePaths, patterns, config)
+	}
+	
+	// Create processor function for concurrent execution
+	processor := func(filePath string) types.Result[types.ProcessResult] {
+		return ProcessFile(filePath, patterns, config)
+	}
+	
+	return concurrency.ProcessFiles(filePaths, workerCount, processor)
+}
+
+// processFilesSequentially processes files one by one (used as fallback).
+func processFilesSequentially(filePaths []string, patterns types.EmojiPatterns, config types.ProcessingConfig) []types.ProcessResult {
+	results := make([]types.ProcessResult, 0, len(filePaths))
+	
+	for _, filePath := range filePaths {
+		processResult := ProcessFile(filePath, patterns, config)
+		if processResult.IsOk() {
+			results = append(results, processResult.Unwrap())
+		} else {
 			errorResult := types.ProcessResult{
 				FilePath: filePath,
 				Error:    processResult.Error(),

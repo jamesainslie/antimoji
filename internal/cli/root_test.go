@@ -96,7 +96,7 @@ func TestRootCommand(t *testing.T) {
 		
 		outputStr := output.String()
 		assert.Contains(t, outputStr, "antimoji version")
-		assert.Contains(t, outputStr, "0.3.0") // Phase 3 version
+		assert.Contains(t, outputStr, "0.5.0") // Current version
 	})
 }
 
