@@ -254,6 +254,136 @@ func TestCreateProcessingPipeline(t *testing.T) {
 	})
 }
 
+func TestProcessFilesConcurrently(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create multiple test files
+	testFiles := map[string]string{
+		"file1.txt": "Hello 😀 world!",
+		"file2.txt": "No emojis here",
+		"file3.txt": "Multiple 😃😄 emojis",
+		"file4.txt": "Status: ✅ done",
+		"file5.txt": "Custom :smile: patterns",
+	}
+
+	var filePaths []string
+	for name, content := range testFiles {
+		filePath := filepath.Join(tmpDir, name)
+		err := os.WriteFile(filePath, []byte(content), 0644)
+		assert.NoError(t, err)
+		filePaths = append(filePaths, filePath)
+	}
+
+	t.Run("processes files concurrently with correct results", func(t *testing.T) {
+		patterns := detector.DefaultEmojiPatterns()
+		config := types.DefaultProcessingConfig()
+
+		results := ProcessFilesConcurrently(filePaths, patterns, config, 3)
+		assert.Len(t, results, 5)
+
+		// Verify all files were processed
+		processedFiles := make(map[string]bool)
+		totalEmojis := 0
+		for _, result := range results {
+			processedFiles[result.FilePath] = true
+			if result.Error == nil {
+				totalEmojis += result.DetectionResult.TotalCount
+			}
+		}
+
+		assert.Len(t, processedFiles, 5)
+		assert.True(t, totalEmojis > 0, "should detect emojis across files")
+	})
+
+	t.Run("falls back to sequential for small file counts", func(t *testing.T) {
+		smallFileList := filePaths[:2] // Only 2 files
+		patterns := detector.DefaultEmojiPatterns()
+		config := types.DefaultProcessingConfig()
+
+		results := ProcessFilesConcurrently(smallFileList, patterns, config, 4)
+		assert.Len(t, results, 2)
+
+		// Should still work correctly
+		for _, result := range results {
+			assert.NoError(t, result.Error)
+		}
+	})
+
+	t.Run("handles mixed success and failure", func(t *testing.T) {
+		mixedPaths := append(filePaths, filepath.Join(tmpDir, "nonexistent.txt"))
+		patterns := detector.DefaultEmojiPatterns()
+		config := types.DefaultProcessingConfig()
+
+		results := ProcessFilesConcurrently(mixedPaths, patterns, config, 2)
+		assert.Len(t, results, 6)
+
+		successCount := 0
+		errorCount := 0
+		for _, result := range results {
+			if result.Error == nil {
+				successCount++
+			} else {
+				errorCount++
+			}
+		}
+
+		assert.Equal(t, 5, successCount)
+		assert.Equal(t, 1, errorCount)
+	})
+
+	t.Run("auto-detects worker count", func(t *testing.T) {
+		patterns := detector.DefaultEmojiPatterns()
+		config := types.DefaultProcessingConfig()
+
+		results := ProcessFilesConcurrently(filePaths, patterns, config, 0)
+		assert.Len(t, results, 5)
+
+		// Should complete successfully with auto-detected workers
+		for _, result := range results {
+			assert.NotNil(t, result.FilePath)
+		}
+	})
+}
+
+func TestProcessFiles_ConcurrencyDecision(t *testing.T) {
+	tmpDir := t.TempDir()
+	patterns := detector.DefaultEmojiPatterns()
+	config := types.DefaultProcessingConfig()
+
+	t.Run("uses sequential processing for single file", func(t *testing.T) {
+		content := "Hello 😀 world!"
+		filePath := filepath.Join(tmpDir, "single.txt")
+		err := os.WriteFile(filePath, []byte(content), 0644)
+		assert.NoError(t, err)
+
+		results := ProcessFiles([]string{filePath}, patterns, config)
+		assert.Len(t, results, 1)
+		assert.NoError(t, results[0].Error)
+		assert.Equal(t, 1, results[0].DetectionResult.TotalCount)
+	})
+
+	t.Run("uses concurrent processing for multiple files", func(t *testing.T) {
+		// Create multiple files
+		var filePaths []string
+		for i := 0; i < 5; i++ {
+			content := fmt.Sprintf("File %d with 😀 emoji", i)
+			filePath := filepath.Join(tmpDir, fmt.Sprintf("multi_%d.txt", i))
+			err := os.WriteFile(filePath, []byte(content), 0644)
+			assert.NoError(t, err)
+			filePaths = append(filePaths, filePath)
+		}
+
+		results := ProcessFiles(filePaths, patterns, config)
+		assert.Len(t, results, 5)
+
+		// All should be processed successfully
+		for _, result := range results {
+			assert.NoError(t, result.Error)
+			assert.Equal(t, 1, result.DetectionResult.TotalCount)
+		}
+	})
+}
+
 // Benchmark tests for performance
 func BenchmarkProcessFile(b *testing.B) {
 	tmpDir := b.TempDir()
@@ -314,6 +444,70 @@ func BenchmarkProcessFiles(b *testing.B) {
 			b.Fatal("unexpected number of results")
 		}
 	}
+}
+
+func BenchmarkProcessFilesConcurrent_vs_Sequential(b *testing.B) {
+	tmpDir := b.TempDir()
+	patterns := detector.DefaultEmojiPatterns()
+	config := types.DefaultProcessingConfig()
+
+	// Create test files
+	var filePaths []string
+	for i := 0; i < 20; i++ {
+		content := fmt.Sprintf("File %d with 😀😃 emojis and :) emoticons", i)
+		filePath := filepath.Join(tmpDir, fmt.Sprintf("bench_%d.txt", i))
+		err := os.WriteFile(filePath, []byte(content), 0644)
+		assert.NoError(b, err)
+		filePaths = append(filePaths, filePath)
+	}
+
+	b.Run("Sequential", func(b *testing.B) {
+		b.ResetTimer()
+		b.ReportAllocs()
+
+		for i := 0; i < b.N; i++ {
+			results := processFilesSequentially(filePaths, patterns, config)
+			if len(results) != len(filePaths) {
+				b.Fatal("unexpected number of results")
+			}
+		}
+	})
+
+	b.Run("Concurrent_2_workers", func(b *testing.B) {
+		b.ResetTimer()
+		b.ReportAllocs()
+
+		for i := 0; i < b.N; i++ {
+			results := ProcessFilesConcurrently(filePaths, patterns, config, 2)
+			if len(results) != len(filePaths) {
+				b.Fatal("unexpected number of results")
+			}
+		}
+	})
+
+	b.Run("Concurrent_4_workers", func(b *testing.B) {
+		b.ResetTimer()
+		b.ReportAllocs()
+
+		for i := 0; i < b.N; i++ {
+			results := ProcessFilesConcurrently(filePaths, patterns, config, 4)
+			if len(results) != len(filePaths) {
+				b.Fatal("unexpected number of results")
+			}
+		}
+	})
+
+	b.Run("Concurrent_auto_workers", func(b *testing.B) {
+		b.ResetTimer()
+		b.ReportAllocs()
+
+		for i := 0; i < b.N; i++ {
+			results := ProcessFilesConcurrently(filePaths, patterns, config, 0)
+			if len(results) != len(filePaths) {
+				b.Fatal("unexpected number of results")
+			}
+		}
+	})
 }
 
 // Example usage for documentation

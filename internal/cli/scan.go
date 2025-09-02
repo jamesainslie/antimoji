@@ -27,6 +27,7 @@ type ScanOptions struct {
 	IgnoreAllowlist bool
 	Stats          bool
 	Benchmark      bool
+	Workers        int
 }
 
 // NewScanCommand creates the scan command.
@@ -65,6 +66,7 @@ Examples:
 	cmd.Flags().BoolVar(&opts.IgnoreAllowlist, "ignore-allowlist", false, "ignore configured emoji allowlist")
 	cmd.Flags().BoolVar(&opts.Stats, "stats", false, "show performance statistics")
 	cmd.Flags().BoolVar(&opts.Benchmark, "benchmark", false, "run in benchmark mode with detailed metrics")
+	cmd.Flags().IntVar(&opts.Workers, "workers", 0, "number of concurrent workers (0 = auto-detect)")
 
 	return cmd
 }
@@ -129,8 +131,13 @@ func runScan(cmd *cobra.Command, args []string, opts *ScanOptions) error {
 		}
 	}
 
-	// Process files
-	results := processor.ProcessFiles(filePaths, patterns, processingConfig)
+	// Process files (use concurrent processing if multiple files and workers configured)
+	var results []types.ProcessResult
+	if opts.Workers > 0 && len(filePaths) > 1 {
+		results = processor.ProcessFilesConcurrently(filePaths, patterns, processingConfig, opts.Workers)
+	} else {
+		results = processor.ProcessFiles(filePaths, patterns, processingConfig)
+	}
 
 	// Apply allowlist filtering to results
 	if emojiAllowlist != nil {
