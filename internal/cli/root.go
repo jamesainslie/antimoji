@@ -36,7 +36,7 @@ Built with Go using functional programming principles, Antimoji provides:
 - Git integration and CI/CD pipeline support`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Version:       "0.3.0", // Phase 3 version
+		Version:       "0.5.0", // Current version
 	}
 
 	// Add global persistent flags
