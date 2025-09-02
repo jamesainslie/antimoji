@@ -48,6 +48,7 @@ Built with Go using functional programming principles, Antimoji provides:
 
 	// Add subcommands
 	cmd.AddCommand(NewScanCommand())
+	cmd.AddCommand(NewCleanCommand())
 
 	// Set up configuration
 	cobra.OnInitialize(initConfig)
