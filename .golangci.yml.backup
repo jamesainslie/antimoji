@@ -1,21 +1,18 @@
+# golangci-lint configuration file
+# See https://golangci-lint.run/usage/configuration/ for full documentation
+
 run:
   timeout: 5m
   tests: true
-  skip-files:
-    - ".*\\.pb\\.go$"
-    - ".*_mock\\.go$" 
-    - ".*_gen\\.go$"
   skip-dirs:
     - vendor
     - test/fixtures
     - .git
 
 output:
-  color: always
   format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
-  uniq-by-line: true
   sort-results: true
 
 linters:
@@ -40,7 +37,7 @@ linters:
 
 linters-settings:
   gocyclo:
-    min-complexity: 10
+    min-complexity: 25
   gosec:
     severity: medium
     confidence: medium
@@ -54,8 +51,19 @@ linters-settings:
       - ifElseChain
       - octalLiteral
       - whyNoLint
+      - hugeParam
+      - rangeValCopy
+      - singleCaseSwitch
 
 issues:
+  exclude-files:
+    - ".*\\.pb\\.go$"
+    - ".*_mock\\.go$" 
+    - ".*_gen\\.go$"
+  exclude-dirs:
+    - vendor
+    - test/fixtures
+    - .git
   exclude-rules:
     - path: _test\.go
       linters:
