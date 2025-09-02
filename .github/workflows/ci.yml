@@ -65,33 +65,31 @@ jobs:
         BADGE_URL="https://img.shields.io/badge/coverage-${COVERAGE}%25-${COLOR}?logo=go"
         curl -s "$BADGE_URL" > badges/coverage.svg
         echo "Generated coverage badge: ${COVERAGE}% (${COLOR})"
+        echo "Badge URL: ${BADGE_URL}"
         
-        # Update README if on main branch
-        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-          # Update README with new badge URL
-          sed -i "s|https://img.shields.io/badge/coverage-[0-9.]*%25-[a-z]*|${BADGE_URL}|g" README.md
-          
-          # Check if README was actually changed
-          if git diff --quiet README.md; then
-            echo "No coverage badge update needed"
-          else
-            echo "README.md updated with new coverage badge"
-            # Configure git for the action
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            
-            # Commit and push the updated badge
-            git add README.md
-            git commit -m "chore: auto-update coverage badge to ${COVERAGE}% [skip ci]"
-            git push
-          fi
-        fi
+        # Save badge info for manual update
+        echo "COVERAGE=${COVERAGE}" >> $GITHUB_ENV
+        echo "BADGE_URL=${BADGE_URL}" >> $GITHUB_ENV
+        echo "BADGE_COLOR=${COLOR}" >> $GITHUB_ENV
         
     - name: Upload coverage badge
       uses: actions/upload-artifact@v4
       with:
         name: coverage-badge
         path: badges/coverage.svg
+        
+    - name: Coverage summary
+      run: |
+        echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Coverage: ${{ env.COVERAGE }}%**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Badge: ![${{ env.COVERAGE }}%](${{ env.BADGE_URL }})" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "To update the README badge manually:" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "./scripts/update-coverage-badge.sh" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         
     - name: Verify coverage threshold
       run: |
