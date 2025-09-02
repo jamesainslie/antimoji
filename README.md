@@ -4,9 +4,9 @@
   <h1>Antimoji</h1>
   
   <p>
-    <a href="https://github.com/jamesainslie/antimoji/actions/workflows/ci.yml"><img src="https://github.com/jamesainslie/antimoji/workflows/CI/badge.svg" alt="CI Status"></a>
-    <a href="https://github.com/jamesainslie/antimoji/actions/workflows/build.yml"><img src="https://github.com/jamesainslie/antimoji/workflows/Build/badge.svg" alt="Build Status"></a>
-    <a href="https://github.com/jamesainslie/antimoji/actions/workflows/nightly.yml"><img src="https://github.com/jamesainslie/antimoji/workflows/Nightly%20Build/badge.svg" alt="Nightly Build"></a>
+    <a href="https://github.com/jamesainslie/antimoji/actions/workflows/ci.yml"><img src="https://github.com/jamesainslie/antimoji/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
+    <a href="https://github.com/jamesainslie/antimoji/actions/workflows/build.yml"><img src="https://github.com/jamesainslie/antimoji/actions/workflows/build.yml/badge.svg" alt="Build Status"></a>
+    <a href="https://github.com/jamesainslie/antimoji/actions/workflows/nightly.yml"><img src="https://github.com/jamesainslie/antimoji/actions/workflows/nightly.yml/badge.svg" alt="Nightly Build"></a>
     <br/>
     <a href="https://golang.org"><img src="https://img.shields.io/github/go-mod/go-version/jamesainslie/antimoji?color=00ADD8&logo=go" alt="Go Version"></a>
     <a href="https://github.com/jamesainslie/antimoji/releases"><img src="https://img.shields.io/github/v/release/jamesainslie/antimoji?color=blue&logo=github" alt="Latest Release"></a>

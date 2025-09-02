@@ -36,13 +36,13 @@ echo -e "${BLUE}1. CI/CD Workflow Badges${NC}"
 echo "------------------------"
 
 # CI Badge
-check_url "https://github.com/$REPO/workflows/CI/badge.svg" "CI Workflow Badge"
+check_url "https://github.com/$REPO/actions/workflows/ci.yml/badge.svg" "CI Workflow Badge"
 
 # Build Badge  
-check_url "https://github.com/$REPO/workflows/Build/badge.svg" "Build Workflow Badge"
+check_url "https://github.com/$REPO/actions/workflows/build.yml/badge.svg" "Build Workflow Badge"
 
 # Nightly Build Badge
-check_url "https://github.com/$REPO/workflows/Nightly%20Build/badge.svg" "Nightly Build Badge"
+check_url "https://github.com/$REPO/actions/workflows/nightly.yml/badge.svg" "Nightly Build Badge"
 
 echo ""
 echo -e "${BLUE}2. Repository Information Badges${NC}"
