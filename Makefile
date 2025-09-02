@@ -10,14 +10,24 @@ help: ## Show this help message
 	@echo "Available targets:"
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
+# Build information
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+BUILD_TIME = $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+GIT_COMMIT = $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
+# LD flags for build information
+LDFLAGS = -X github.com/antimoji/antimoji/cmd/antimoji.version=$(VERSION) \
+          -X github.com/antimoji/antimoji/cmd/antimoji.buildTime=$(BUILD_TIME) \
+          -X github.com/antimoji/antimoji/cmd/antimoji.gitCommit=$(GIT_COMMIT)
+
 # Build targets
 build: ## Build the antimoji binary
 	@echo "Building antimoji..."
-	go build -o bin/antimoji ./cmd/antimoji
+	go build -ldflags="$(LDFLAGS)" -o bin/antimoji ./cmd/antimoji
 
 build-release: ## Build optimized release binary
 	@echo "Building optimized release binary..."
-	CGO_ENABLED=0 go build -ldflags="-s -w -X main.version=$(VERSION) -X main.buildTime=$(shell date -u +%Y-%m-%dT%H:%M:%SZ) -X main.gitCommit=$(shell git rev-parse --short HEAD)" -o bin/antimoji ./cmd/antimoji
+	CGO_ENABLED=0 go build -ldflags="-s -w $(LDFLAGS)" -o bin/antimoji ./cmd/antimoji
 
 # Development targets
 deps: ## Download and verify dependencies
@@ -126,6 +136,36 @@ generate-mocks: ## Generate mocks for interfaces
 docs-serve: ## Serve documentation locally
 	@echo "Serving documentation on http://localhost:6060"
 	godoc -http=:6060
+
+# Installation targets
+install: build ## Install antimoji to system location
+	@echo "Installing antimoji..."
+	@if [ "$(shell uname)" = "Darwin" ]; then \
+		sudo cp bin/antimoji /usr/local/bin/antimoji; \
+		echo "Installed to /usr/local/bin/antimoji"; \
+	elif [ "$(shell uname)" = "Linux" ]; then \
+		sudo cp bin/antimoji /usr/local/bin/antimoji; \
+		echo "Installed to /usr/local/bin/antimoji"; \
+	elif [ "$(shell uname | grep -i cygwin)" ]; then \
+		cp bin/antimoji.exe /usr/local/bin/antimoji.exe; \
+		echo "Installed to /usr/local/bin/antimoji.exe"; \
+	else \
+		echo "Unsupported platform: $(shell uname)"; \
+		echo "Please manually copy bin/antimoji to your PATH"; \
+		exit 1; \
+	fi
+
+uninstall: ## Uninstall antimoji from system
+	@echo "Uninstalling antimoji..."
+	@if [ "$(shell uname)" = "Darwin" ] || [ "$(shell uname)" = "Linux" ]; then \
+		sudo rm -f /usr/local/bin/antimoji; \
+		echo "Removed /usr/local/bin/antimoji"; \
+	elif [ "$(shell uname | grep -i cygwin)" ]; then \
+		rm -f /usr/local/bin/antimoji.exe; \
+		echo "Removed /usr/local/bin/antimoji.exe"; \
+	else \
+		echo "Please manually remove antimoji from your PATH"; \
+	fi
 
 # Clean targets
 clean: ## Clean build artifacts

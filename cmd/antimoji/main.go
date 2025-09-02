@@ -8,15 +8,17 @@ import (
 	"github.com/antimoji/antimoji/internal/cli"
 )
 
-// Build information (set by goreleaser or build scripts)
-// These will be used in future versions for version reporting
+// Build information (set by ldflags during build)
 var (
-	_ = "dev"     // version - reserved for future use
-	_ = "unknown" // buildTime - reserved for future use  
-	_ = "unknown" // gitCommit - reserved for future use
+	version   = "dev"
+	buildTime = "unknown"
+	gitCommit = "unknown"
 )
 
 func main() {
+	// Set build information for CLI
+	cli.SetBuildInfo(version, buildTime, gitCommit)
+	
 	if err := cli.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
