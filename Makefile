@@ -68,6 +68,10 @@ test-coverage-check: ## Check if test coverage meets minimum requirement (85%)
 		echo "✅ Test coverage $${COVERAGE}% meets requirement"; \
 	fi
 
+update-coverage-badge: test-coverage ## Update coverage badge in README
+	@echo "Updating coverage badge..."
+	@./scripts/update-coverage-badge.sh
+
 test-watch: ## Run tests in watch mode (requires entr)
 	@echo "Running tests in watch mode (Ctrl+C to stop)..."
 	find . -name "*.go" | entr -c go test -race ./...
