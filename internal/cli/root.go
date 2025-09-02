@@ -17,6 +17,11 @@ var (
 	verbose     bool
 	quiet       bool
 	dryRun      bool
+	
+	// Build information (will be set by main package)
+	buildVersion   = "0.5.0"
+	buildTime      = "unknown"
+	buildGitCommit = "unknown"
 )
 
 // NewRootCommand creates the root command for the CLI.
@@ -36,7 +41,7 @@ Built with Go using functional programming principles, Antimoji provides:
 - Git integration and CI/CD pipeline support`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Version:       "0.5.0", // Current version
+		Version:       buildVersion,
 	}
 
 	// Add global persistent flags
@@ -49,11 +54,19 @@ Built with Go using functional programming principles, Antimoji provides:
 	// Add subcommands
 	cmd.AddCommand(NewScanCommand())
 	cmd.AddCommand(NewCleanCommand())
+	cmd.AddCommand(NewVersionCommand())
 
 	// Set up configuration
 	cobra.OnInitialize(initConfig)
 
 	return cmd
+}
+
+// SetBuildInfo sets the build information for version reporting.
+func SetBuildInfo(version, bTime, gCommit string) {
+	buildVersion = version
+	buildTime = bTime
+	buildGitCommit = gCommit
 }
 
 // Execute runs the root command.
