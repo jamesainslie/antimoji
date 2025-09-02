@@ -41,19 +41,36 @@ jobs:
     - name: Check test coverage
       run: make test-coverage-check
       
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.out
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
-        token: ${{ secrets.CODECOV_TOKEN }}
-        
     - name: Generate coverage badge
-      uses: tj-actions/coverage-badge-go@v2
+      run: |
+        # Calculate coverage percentage
+        COVERAGE=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | sed 's/%//')
+        echo "Coverage: ${COVERAGE}%"
+        
+        # Generate coverage badge SVG
+        mkdir -p badges
+        if (( $(echo "$COVERAGE >= 90" | bc -l) )); then
+          COLOR="brightgreen"
+        elif (( $(echo "$COVERAGE >= 80" | bc -l) )); then
+          COLOR="green"
+        elif (( $(echo "$COVERAGE >= 70" | bc -l) )); then
+          COLOR="yellow"
+        elif (( $(echo "$COVERAGE >= 60" | bc -l) )); then
+          COLOR="orange"
+        else
+          COLOR="red"
+        fi
+        
+        # Create badge URL and download it
+        BADGE_URL="https://img.shields.io/badge/coverage-${COVERAGE}%25-${COLOR}?logo=go"
+        curl -s "$BADGE_URL" > badges/coverage.svg
+        echo "Generated coverage badge: ${COVERAGE}% (${COLOR})"
+        
+    - name: Upload coverage badge
+      uses: actions/upload-artifact@v4
       with:
-        filename: coverage.out
+        name: coverage-badge
+        path: badges/coverage.svg
         
     - name: Verify coverage threshold
       run: |
