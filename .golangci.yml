@@ -1,0 +1,68 @@
+run:
+  timeout: 5m
+  tests: true
+  skip-files:
+    - ".*\\.pb\\.go$"
+    - ".*_mock\\.go$" 
+    - ".*_gen\\.go$"
+  skip-dirs:
+    - vendor
+    - test/fixtures
+    - .git
+
+output:
+  color: always
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+  sort-results: true
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - gocyclo
+    - gofmt
+    - goimports
+    - misspell
+    - unconvert
+    - gocritic
+    - gosec
+    - bodyclose
+    - noctx
+
+linters-settings:
+  gocyclo:
+    min-complexity: 10
+  gosec:
+    severity: medium
+    confidence: medium
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
+      - style
+    disabled-checks:
+      - dupImport
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gosec
+        - gocritic
+    - path: cmd/antimoji/main\.go
+      linters:
+        - gochecknoinits
+  max-issues-per-linter: 0
+  max-same-issues: 0
