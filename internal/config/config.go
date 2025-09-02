@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/spf13/viper"
 	"github.com/antimoji/antimoji/internal/types"
+	"github.com/spf13/viper"
 )
 
 // Config represents the complete application configuration.
@@ -18,9 +18,9 @@ type Config struct {
 // Profile represents a configuration profile with specific settings.
 type Profile struct {
 	// File processing
-	Recursive       bool `yaml:"recursive" json:"recursive"`
-	FollowSymlinks  bool `yaml:"follow_symlinks" json:"follow_symlinks"`
-	BackupFiles     bool `yaml:"backup_files" json:"backup_files"`
+	Recursive      bool `yaml:"recursive" json:"recursive"`
+	FollowSymlinks bool `yaml:"follow_symlinks" json:"follow_symlinks"`
+	BackupFiles    bool `yaml:"backup_files" json:"backup_files"`
 
 	// Emoji detection
 	UnicodeEmojis  bool     `yaml:"unicode_emojis" json:"unicode_emojis"`
@@ -41,19 +41,19 @@ type Profile struct {
 	ExcludePatterns []string `yaml:"exclude_patterns" json:"exclude_patterns"`
 
 	// CI/CD and linting
-	FailOnFound        bool `yaml:"fail_on_found" json:"fail_on_found"`
-	MaxEmojiThreshold  int  `yaml:"max_emoji_threshold" json:"max_emoji_threshold"`
-	ExitCodeOnFound    int  `yaml:"exit_code_on_found" json:"exit_code_on_found"`
+	FailOnFound       bool `yaml:"fail_on_found" json:"fail_on_found"`
+	MaxEmojiThreshold int  `yaml:"max_emoji_threshold" json:"max_emoji_threshold"`
+	ExitCodeOnFound   int  `yaml:"exit_code_on_found" json:"exit_code_on_found"`
 
 	// Performance
-	MaxWorkers int   `yaml:"max_workers" json:"max_workers"`
-	BufferSize int   `yaml:"buffer_size" json:"buffer_size"`
+	MaxWorkers  int   `yaml:"max_workers" json:"max_workers"`
+	BufferSize  int   `yaml:"buffer_size" json:"buffer_size"`
 	MaxFileSize int64 `yaml:"max_file_size" json:"max_file_size"`
 
 	// Output
-	OutputFormat   string `yaml:"output_format" json:"output_format"`
-	ShowProgress   bool   `yaml:"show_progress" json:"show_progress"`
-	ColoredOutput  bool   `yaml:"colored_output" json:"colored_output"`
+	OutputFormat  string `yaml:"output_format" json:"output_format"`
+	ShowProgress  bool   `yaml:"show_progress" json:"show_progress"`
+	ColoredOutput bool   `yaml:"colored_output" json:"colored_output"`
 }
 
 // LoadConfig loads configuration from the specified file path.
@@ -269,7 +269,7 @@ func MergeProfiles(base, override Profile) Profile {
 	// For boolean fields, we need to check if they were explicitly set
 	// Since Go doesn't have optional types, we'll assume any difference means it was set
 	// This is a simplified approach for now
-	
+
 	// Override specific fields that are different from zero values
 	if len(override.CustomPatterns) > 0 {
 		result.CustomPatterns = override.CustomPatterns
@@ -286,7 +286,7 @@ func MergeProfiles(base, override Profile) Profile {
 	if override.OutputFormat != "" {
 		result.OutputFormat = override.OutputFormat
 	}
-	
+
 	// For this simple implementation, we'll just override boolean fields explicitly
 	// In a real implementation, we might use pointers or a more sophisticated approach
 	result.Recursive = override.Recursive

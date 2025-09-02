@@ -15,7 +15,7 @@ import (
 func TestRootCommand(t *testing.T) {
 	t.Run("creates root command with correct properties", func(t *testing.T) {
 		cmd := NewRootCommand()
-		
+
 		assert.Equal(t, "antimoji", cmd.Use)
 		assert.Contains(t, cmd.Short, "emoji detection")
 		assert.NotEmpty(t, cmd.Long)
@@ -25,10 +25,10 @@ func TestRootCommand(t *testing.T) {
 
 	t.Run("has expected global flags", func(t *testing.T) {
 		cmd := NewRootCommand()
-		
+
 		// Check for global flags
 		flags := cmd.PersistentFlags()
-		
+
 		configFlag := flags.Lookup("config")
 		assert.NotNil(t, configFlag)
 		assert.Equal(t, "string", configFlag.Value.Type())
@@ -52,7 +52,7 @@ func TestRootCommand(t *testing.T) {
 
 	t.Run("has scan subcommand", func(t *testing.T) {
 		cmd := NewRootCommand()
-		
+
 		scanCmd := findSubcommand(cmd, "scan")
 		if scanCmd == nil {
 			// Print available commands for debugging
@@ -71,14 +71,14 @@ func TestRootCommand(t *testing.T) {
 
 	t.Run("shows help when no arguments", func(t *testing.T) {
 		cmd := NewRootCommand()
-		
+
 		var output bytes.Buffer
 		cmd.SetOut(&output)
 		cmd.SetArgs([]string{})
-		
+
 		err := cmd.Execute()
 		assert.NoError(t, err)
-		
+
 		outputStr := output.String()
 		assert.Contains(t, outputStr, "antimoji")
 		assert.Contains(t, outputStr, "Available Commands")
@@ -86,14 +86,14 @@ func TestRootCommand(t *testing.T) {
 
 	t.Run("shows version with --version flag", func(t *testing.T) {
 		cmd := NewRootCommand()
-		
+
 		var output bytes.Buffer
 		cmd.SetOut(&output)
 		cmd.SetArgs([]string{"--version"})
-		
+
 		err := cmd.Execute()
 		assert.NoError(t, err)
-		
+
 		outputStr := output.String()
 		assert.Contains(t, outputStr, "antimoji version")
 		assert.Contains(t, outputStr, "0.6.0") // Current version
@@ -109,17 +109,17 @@ func TestExecute(t *testing.T) {
 
 		// Execute with help to avoid actually running commands
 		os.Args = []string{"antimoji", "--help"}
-		
+
 		err := Execute()
-		
+
 		// Restore stdout
 		_ = w.Close() // Ignore error in test cleanup
 		os.Stdout = oldStdout
-		
+
 		// Read captured output
 		var buf bytes.Buffer
 		_, _ = buf.ReadFrom(r)
-		
+
 		assert.NoError(t, err)
 		output := buf.String()
 		assert.Contains(t, output, "antimoji")
@@ -136,17 +136,17 @@ profiles:
   default:
     recursive: false
     unicode_emojis: false`
-		
+
 		configPath := filepath.Join(tmpDir, "test_config.yaml")
 		err := os.WriteFile(configPath, []byte(configContent), 0644)
 		assert.NoError(t, err)
 
 		cmd := NewRootCommand()
 		cmd.SetArgs([]string{"--config", configPath, "scan", "--help"})
-		
+
 		var output bytes.Buffer
 		cmd.SetOut(&output)
-		
+
 		err = cmd.Execute()
 		assert.NoError(t, err)
 	})
@@ -154,10 +154,10 @@ profiles:
 	t.Run("profile flag selects profile", func(t *testing.T) {
 		cmd := NewRootCommand()
 		cmd.SetArgs([]string{"--profile", "strict", "scan", "--help"})
-		
+
 		var output bytes.Buffer
 		cmd.SetOut(&output)
-		
+
 		err := cmd.Execute()
 		assert.NoError(t, err)
 	})
@@ -165,10 +165,10 @@ profiles:
 	t.Run("verbose flag increases verbosity", func(t *testing.T) {
 		cmd := NewRootCommand()
 		cmd.SetArgs([]string{"--verbose", "scan", "--help"})
-		
+
 		var output bytes.Buffer
 		cmd.SetOut(&output)
-		
+
 		err := cmd.Execute()
 		assert.NoError(t, err)
 	})
@@ -190,12 +190,12 @@ func findSubcommand(cmd *cobra.Command, name string) *cobra.Command {
 func ExampleNewRootCommand() {
 	cmd := NewRootCommand()
 	cmd.SetArgs([]string{"--help"})
-	
+
 	var output bytes.Buffer
 	cmd.SetOut(&output)
-	
+
 	_ = cmd.Execute()
-	
+
 	// Output will contain help text
 	outputStr := output.String()
 	if strings.Contains(outputStr, "antimoji") {

@@ -17,7 +17,7 @@ var (
 	verbose     bool
 	quiet       bool
 	dryRun      bool
-	
+
 	// Build information (will be set by main package)
 	buildVersion   = "0.6.0"
 	buildTime      = "unknown"

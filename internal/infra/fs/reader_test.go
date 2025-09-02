@@ -23,7 +23,7 @@ func TestReadFile(t *testing.T) {
 
 		result := ReadFile(filePath)
 		assert.True(t, result.IsOk())
-		
+
 		data := result.Unwrap()
 		assert.Equal(t, content, string(data))
 	})
@@ -35,14 +35,14 @@ func TestReadFile(t *testing.T) {
 
 		result := ReadFile(filePath)
 		assert.True(t, result.IsOk())
-		
+
 		data := result.Unwrap()
 		assert.Empty(t, data)
 	})
 
 	t.Run("handles non-existent file", func(t *testing.T) {
 		filePath := filepath.Join(tmpDir, "nonexistent.txt")
-		
+
 		result := ReadFile(filePath)
 		assert.True(t, result.IsErr())
 		assert.Contains(t, result.Error().Error(), "no such file")
@@ -57,7 +57,7 @@ func TestReadFile(t *testing.T) {
 
 		result := ReadFile(filePath)
 		assert.True(t, result.IsOk())
-		
+
 		data := result.Unwrap()
 		assert.Equal(t, content, string(data))
 	})
@@ -128,7 +128,7 @@ func TestReadFileStream(t *testing.T) {
 
 	t.Run("handles non-existent file", func(t *testing.T) {
 		filePath := filepath.Join(tmpDir, "nonexistent_stream.txt")
-		
+
 		result := ReadFileStream(filePath, 1024)
 		assert.True(t, result.IsErr())
 	})
@@ -189,7 +189,7 @@ func TestGetFileInfo(t *testing.T) {
 
 	t.Run("handles non-existent file", func(t *testing.T) {
 		filePath := filepath.Join(tmpDir, "nonexistent.txt")
-		
+
 		result := GetFileInfo(filePath)
 		assert.True(t, result.IsErr())
 	})
@@ -198,7 +198,7 @@ func TestGetFileInfo(t *testing.T) {
 // Benchmark tests for performance
 func BenchmarkReadFile(b *testing.B) {
 	tmpDir := b.TempDir()
-	
+
 	testCases := []struct {
 		name string
 		size int

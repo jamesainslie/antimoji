@@ -129,7 +129,7 @@ func TestProcessFile(t *testing.T) {
 		assert.NoError(t, err)
 
 		patterns := detector.DefaultEmojiPatterns()
-		
+
 		// Test with only Unicode enabled
 		config := types.DefaultProcessingConfig()
 		config.EnableEmoticons = false
@@ -155,7 +155,7 @@ func TestProcessFile(t *testing.T) {
 
 		result := ProcessFile(filePath, patterns, config)
 		assert.True(t, result.IsOk()) // Should still return Ok, but with empty results
-		
+
 		processResult := result.Unwrap()
 		assert.Equal(t, 0, processResult.DetectionResult.TotalCount)
 	})
@@ -247,7 +247,7 @@ func TestCreateProcessingPipeline(t *testing.T) {
 
 		pipeline := CreateProcessingPipeline(config)
 		patterns := detector.DefaultEmojiPatterns()
-		
+
 		results := pipeline.Process([]string{filePath}, patterns)
 		assert.Len(t, results, 1)
 		assert.Equal(t, 1, results[0].DetectionResult.TotalCount) // Only Unicode, no emoticon
@@ -532,7 +532,7 @@ func ExampleProcessFile() {
 	// Process the file
 	patterns := detector.DefaultEmojiPatterns()
 	config := types.DefaultProcessingConfig()
-	
+
 	result := ProcessFile(tmpFile.Name(), patterns, config)
 	if result.IsOk() {
 		processResult := result.Unwrap()

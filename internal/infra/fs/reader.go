@@ -30,16 +30,16 @@ func ReadFileStream(filepath string, chunkSize int) types.Result[<-chan []byte] 
 	}
 
 	chunks := make(chan []byte)
-	
+
 	go func() {
 		defer func() {
 			_ = file.Close() // Ignore error in goroutine cleanup
 		}()
 		defer close(chunks)
-		
+
 		reader := bufio.NewReader(file)
 		buffer := make([]byte, chunkSize)
-		
+
 		for {
 			n, err := reader.Read(buffer)
 			if n > 0 {
@@ -48,7 +48,7 @@ func ReadFileStream(filepath string, chunkSize int) types.Result[<-chan []byte] 
 				copy(chunk, buffer[:n])
 				chunks <- chunk
 			}
-			
+
 			if err != nil {
 				// For EOF, we just break normally
 				// For other errors, we could log them but for now just stop
@@ -56,7 +56,7 @@ func ReadFileStream(filepath string, chunkSize int) types.Result[<-chan []byte] 
 			}
 		}
 	}()
-	
+
 	return types.Ok((<-chan []byte)(chunks))
 }
 
@@ -70,18 +70,18 @@ func IsTextFile(filepath string) bool {
 	defer func() {
 		_ = file.Close() // Ignore error in cleanup
 	}()
-	
+
 	// Read a sample of the file to determine if it's text
 	buffer := make([]byte, 1024)
 	n, err := file.Read(buffer)
 	if err != nil && err != io.EOF {
 		return false
 	}
-	
+
 	if n == 0 {
 		return true // Empty files are considered text
 	}
-	
+
 	return isTextContent(buffer[:n])
 }
 
@@ -91,12 +91,12 @@ func GetFileInfo(filepath string) types.Result[types.FileInfo] {
 	if err != nil {
 		return types.Err[types.FileInfo](err)
 	}
-	
+
 	info := types.FileInfo{
 		Path: filepath,
 		Size: stat.Size(),
 	}
-	
+
 	return types.Ok(info)
 }
 
@@ -105,21 +105,21 @@ func isTextContent(data []byte) bool {
 	if len(data) == 0 {
 		return true
 	}
-	
+
 	// Check for null bytes (common in binary files)
 	if bytes.Contains(data, []byte{0}) {
 		return false
 	}
-	
+
 	// Check if the content is valid UTF-8
 	if !utf8.Valid(data) {
 		return false
 	}
-	
+
 	// Count non-printable characters
 	nonPrintable := 0
 	total := 0
-	
+
 	for _, b := range data {
 		total++
 		if b < 32 && b != '\t' && b != '\n' && b != '\r' {
@@ -131,11 +131,11 @@ func isTextContent(data []byte) bool {
 			}
 		}
 	}
-	
+
 	// If more than 30% of bytes are non-printable, consider it binary
 	if total > 0 && float64(nonPrintable)/float64(total) > 0.30 {
 		return false
 	}
-	
+
 	return true
 }
