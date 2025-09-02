@@ -1,0 +1,157 @@
+# GoReleaser configuration for Antimoji
+# High-performance emoji detection and removal CLI tool
+
+version: 2
+
+# Project information
+project_name: antimoji
+
+# Environment variables
+env:
+  - GO111MODULE=on
+  - CGO_ENABLED=0
+
+# Git configuration
+git:
+  tag_sort: -version:refname
+
+# Build configuration
+builds:
+  - id: antimoji
+    main: ./cmd/antimoji
+    binary: antimoji
+    
+    # Build flags
+    flags:
+      - -trimpath
+    
+    # LD flags for version information
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.buildTime={{.Date}}
+      - -X main.gitCommit={{.Commit}}
+    
+    # Target platforms
+    goos:
+      - linux
+      - windows
+      - darwin
+    
+    goarch:
+      - amd64
+      - arm64
+    
+    # Ignore combinations
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+# Archive configuration
+archives:
+  - id: antimoji
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE
+      - CHANGELOG.md
+      - docs/**/*
+
+# Checksum configuration
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+# Snapshot configuration (for development builds)
+snapshot:
+  version_template: "{{ .Version }}-SNAPSHOT-{{ .ShortCommit }}"
+
+# Changelog configuration
+changelog:
+  use: github
+  sort: asc
+  abbrev: 0
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: Bug Fixes
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: Performance
+      regexp: "^.*perf[(\\w)]*:+.*$"
+      order: 2
+    - title: Documentation
+      regexp: "^.*docs[(\\w)]*:+.*$"
+      order: 3
+    - title: Others
+      order: 999
+  filters:
+    exclude:
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
+
+# Release configuration
+release:
+  github:
+    owner: antimoji
+    name: antimoji
+  
+  header: |
+    ## Antimoji {{ .Version }}
+    
+    High-performance emoji detection and removal CLI tool.
+    
+    ### Installation
+    
+    #### Binary Download
+    Download the appropriate binary for your platform from the assets below.
+    
+    #### Package Managers
+    ```bash
+    # macOS (Homebrew)
+    brew install antimoji/tap/antimoji
+    
+    # Go Install
+    go install github.com/antimoji/antimoji/cmd/antimoji@{{ .Version }}
+    ```
+    
+    ### Usage
+    ```bash
+    # Scan for emojis
+    antimoji scan .
+    
+    # Remove emojis safely
+    antimoji clean --backup --in-place .
+    
+    # High-performance scanning
+    antimoji scan --workers 8 --stats .
+    ```
+  
+  footer: |
+    **Full Changelog**: https://github.com/antimoji/antimoji/compare/{{ .PreviousTag }}...{{ .Tag }}
+    
+    ---
+    
+    Built with Go {{ .Env.GOVERSION | default "1.21+" }}
+
+# Homebrew tap (for macOS)
+brews:
+  - name: antimoji
+    repository:
+      owner: antimoji
+      name: homebrew-tap
+    homepage: https://github.com/antimoji/antimoji
+    description: High-performance emoji detection and removal CLI tool
+    license: MIT
+    install: |
+      bin.install "antimoji"
+    test: |
+      system "#{bin}/antimoji --version"
+
+# Validation hooks
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...

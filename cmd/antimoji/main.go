@@ -16,7 +16,7 @@ var (
 )
 
 func main() {
-	// Set build information for CLI
+	// Set build information for CLI before creating commands
 	cli.SetBuildInfo(version, buildTime, gitCommit)
 	
 	if err := cli.Execute(); err != nil {

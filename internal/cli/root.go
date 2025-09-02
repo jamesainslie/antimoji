@@ -19,7 +19,7 @@ var (
 	dryRun      bool
 	
 	// Build information (will be set by main package)
-	buildVersion   = "0.5.0"
+	buildVersion   = "0.6.0"
 	buildTime      = "unknown"
 	buildGitCommit = "unknown"
 )
@@ -41,7 +41,7 @@ Built with Go using functional programming principles, Antimoji provides:
 - Git integration and CI/CD pipeline support`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Version:       buildVersion,
+		Version:       getBuildVersion(),
 	}
 
 	// Add global persistent flags
@@ -60,6 +60,11 @@ Built with Go using functional programming principles, Antimoji provides:
 	cobra.OnInitialize(initConfig)
 
 	return cmd
+}
+
+// getBuildVersion returns the current build version.
+func getBuildVersion() string {
+	return buildVersion
 }
 
 // SetBuildInfo sets the build information for version reporting.

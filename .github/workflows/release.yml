@@ -1,0 +1,114 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        cache: true
+        
+    - name: Run tests
+      run: |
+        go mod download
+        go test ./...
+        
+    - name: Run linter
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        args: --timeout=5m
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        cache: true
+        
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Run GoReleaser
+      uses: goreleaser/goreleaser-action@v5
+      with:
+        distribution: goreleaser
+        version: latest
+        args: release --clean
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-artifacts
+        path: dist/
+        
+    - name: Update release badge
+      run: |
+        echo "Release ${{ github.ref_name }} completed successfully" >> $GITHUB_STEP_SUMMARY
+
+  homebrew:
+    name: Update Homebrew
+    runs-on: ubuntu-latest
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Update Homebrew formula
+      uses: dawidd6/action-homebrew-bump-formula@v3
+      with:
+        token: ${{ secrets.HOMEBREW_TOKEN }}
+        formula: antimoji
+        tag: ${{ github.ref_name }}
+        revision: ${{ github.sha }}
+
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [release, homebrew]
+    if: always()
+    
+    steps:
+    - name: Release notification
+      run: |
+        echo "🚀 Antimoji ${{ github.ref_name }} has been released!"
+        echo "📦 Packages available on GitHub Releases"
+        echo "🐳 Docker images published to GHCR"
+        echo "🍺 Homebrew formula updated"

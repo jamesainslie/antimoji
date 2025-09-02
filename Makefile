@@ -16,9 +16,9 @@ BUILD_TIME = $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 GIT_COMMIT = $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
 # LD flags for build information
-LDFLAGS = -X github.com/antimoji/antimoji/cmd/antimoji.version=$(VERSION) \
-          -X github.com/antimoji/antimoji/cmd/antimoji.buildTime=$(BUILD_TIME) \
-          -X github.com/antimoji/antimoji/cmd/antimoji.gitCommit=$(GIT_COMMIT)
+LDFLAGS = -X main.version=$(VERSION) \
+          -X main.buildTime=$(BUILD_TIME) \
+          -X main.gitCommit=$(GIT_COMMIT)
 
 # Build targets
 build: ## Build the antimoji binary
@@ -186,14 +186,35 @@ release-prepare: ## Prepare for release (VERSION required)
 		exit 1; \
 	fi
 	@echo "Preparing release $(VERSION)..."
-	@echo "Updating version in files..."
+	@echo "Running pre-release checks..."
+	@make check-all
+	@echo "Creating git tag..."
 	@git tag -a $(VERSION) -m "Release $(VERSION)"
-	@echo "Release $(VERSION) prepared. Run 'make release-check' to verify."
+	@echo "Release $(VERSION) prepared. Push tag to trigger release: git push origin $(VERSION)"
 
 release-check: check-all build-release ## Run all checks before release
 	@echo "✅ Release checks passed!"
 	@echo "Binary size: $$(du -h bin/antimoji | cut -f1)"
 	@echo "Ready for release!"
+
+release-snapshot: ## Create snapshot release with GoReleaser
+	@echo "Creating snapshot release..."
+	@if command -v goreleaser >/dev/null 2>&1; then \
+		goreleaser release --snapshot --clean; \
+	else \
+		echo "GoReleaser not installed. Install with: go install github.com/goreleaser/goreleaser@latest"; \
+		exit 1; \
+	fi
+
+release-local: ## Test release locally with GoReleaser
+	@echo "Testing release locally..."
+	@if command -v goreleaser >/dev/null 2>&1; then \
+		goreleaser check; \
+		goreleaser build --snapshot --clean; \
+	else \
+		echo "GoReleaser not installed. Install with: go install github.com/goreleaser/goreleaser@latest"; \
+		exit 1; \
+	fi
 
 # Development workflow
 dev-setup: deps install-tools ## Set up development environment
