@@ -13,7 +13,7 @@
     <a href="https://github.com/jamesainslie/antimoji"><img src="https://img.shields.io/github/stars/jamesainslie/antimoji?color=yellow&logo=github" alt="GitHub Stars"></a>
     <br/>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/jamesainslie/antimoji?color=blue" alt="License"></a>
-    <a href="https://codecov.io/gh/jamesainslie/antimoji"><img src="https://img.shields.io/codecov/c/github/jamesainslie/antimoji?logo=codecov" alt="Coverage"></a>
+    <a href="https://github.com/jamesainslie/antimoji/commits/main"><img src="https://img.shields.io/github/commit-activity/m/jamesainslie/antimoji?color=blue&logo=github" alt="Commit Activity"></a>
     <a href="https://goreportcard.com/report/github.com/jamesainslie/antimoji"><img src="https://goreportcard.com/badge/github.com/jamesainslie/antimoji" alt="Go Report Card"></a>
     <a href="https://pkg.go.dev/github.com/jamesainslie/antimoji"><img src="https://pkg.go.dev/badge/github.com/jamesainslie/antimoji.svg" alt="Go Reference"></a>
   </p>
