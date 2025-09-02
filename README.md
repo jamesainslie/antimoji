@@ -1,9 +1,18 @@
-# Antimoji
-
-[![Go Version](https://img.shields.io/badge/go-1.21+-blue.svg)](https://golang.org)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Coverage](https://img.shields.io/badge/coverage-90%25+-brightgreen.svg)](#test-coverage)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#build-status)
+<!-- markdownlint-disable MD033 MD041 -->
+<div align="center">
+  <img src="pics/antimoji.png" alt="Antimoji Logo" width="200" height="200">
+  <h1>Antimoji</h1>
+  
+  <p>
+    <a href="https://github.com/antimoji/antimoji/actions/workflows/ci.yml"><img src="https://github.com/antimoji/antimoji/workflows/CI/badge.svg" alt="CI"></a>
+    <a href="https://golang.org"><img src="https://img.shields.io/github/go-mod/go-version/antimoji/antimoji" alt="Go Version"></a>
+    <a href="https://github.com/antimoji/antimoji/releases"><img src="https://img.shields.io/github/v/release/antimoji/antimoji" alt="Release"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/antimoji/antimoji" alt="License"></a>
+    <a href="https://codecov.io/gh/antimoji/antimoji"><img src="https://img.shields.io/codecov/c/github/antimoji/antimoji" alt="Coverage"></a>
+    <a href="https://goreportcard.com/report/github.com/antimoji/antimoji"><img src="https://goreportcard.com/badge/github.com/antimoji/antimoji" alt="Go Report Card"></a>
+  </p>
+</div>
+<!-- markdownlint-enable MD033 MD041 -->
 
 > A blazing-fast CLI tool for detecting and removing emojis from code files and documentation.
 

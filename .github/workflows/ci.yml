@@ -5,9 +5,12 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  workflow_dispatch:
 
 env:
   GO_VERSION: '1.21'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   test:
@@ -43,6 +46,22 @@ jobs:
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: true
+        
+    - name: Generate coverage badge
+      uses: tj-actions/coverage-badge-go@v2
+      with:
+        filename: coverage.out
+        
+    - name: Verify coverage threshold
+      run: |
+        COVERAGE=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | sed 's/%//')
+        echo "Coverage: ${COVERAGE}%"
+        if (( $(echo "$COVERAGE < 85" | bc -l) )); then
+          echo "❌ Coverage ${COVERAGE}% is below required 85%"
+          exit 1
+        else
+          echo "✅ Coverage ${COVERAGE}% meets requirement"
+        fi
 
   lint:
     name: Lint
