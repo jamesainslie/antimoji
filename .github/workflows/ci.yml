@@ -66,6 +66,27 @@ jobs:
         curl -s "$BADGE_URL" > badges/coverage.svg
         echo "Generated coverage badge: ${COVERAGE}% (${COLOR})"
         
+        # Update README if on main branch
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          # Update README with new badge URL
+          sed -i "s|https://img.shields.io/badge/coverage-[0-9.]*%25-[a-z]*|${BADGE_URL}|g" README.md
+          
+          # Check if README was actually changed
+          if git diff --quiet README.md; then
+            echo "No coverage badge update needed"
+          else
+            echo "README.md updated with new coverage badge"
+            # Configure git for the action
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            
+            # Commit and push the updated badge
+            git add README.md
+            git commit -m "chore: auto-update coverage badge to ${COVERAGE}% [skip ci]"
+            git push
+          fi
+        fi
+        
     - name: Upload coverage badge
       uses: actions/upload-artifact@v4
       with:
