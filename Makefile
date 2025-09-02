@@ -8,7 +8,7 @@ help: ## Show this help message
 	@echo "Antimoji - High-performance emoji detection CLI"
 	@echo ""
 	@echo "Available targets:"
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[32m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 # Build information
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
