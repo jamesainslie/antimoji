@@ -1,0 +1,21 @@
+# Simple golangci-lint configuration that works with both v1 and v2
+# For full documentation, see: https://golangci-lint.run/usage/configuration/
+
+linters:
+  enable:
+    - errcheck      # Check for unchecked errors
+    - gosimple      # Simplify code
+    - govet         # Report suspicious constructs
+    - ineffassign   # Detect ineffectual assignments
+    - staticcheck   # Advanced static analysis
+    - typecheck     # Parse and type-check Go code
+    - unused        # Find unused code
+    - gofmt         # Check formatting
+    - goimports     # Check imports
+
+run:
+  timeout: 5m
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
