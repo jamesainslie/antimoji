@@ -43,6 +43,7 @@ install-tools: ## Install development tools
 	go install github.com/vektra/mockery/v2@latest
 	go install github.com/golang/mock/mockgen@latest
 	go install honnef.co/go/tools/cmd/staticcheck@latest
+	go install github.com/goreleaser/goreleaser@latest
 
 # Testing targets
 test: ## Run all tests
@@ -57,8 +58,10 @@ test-coverage: ## Run tests with coverage report
 
 test-coverage-check: ## Check if test coverage meets minimum requirement (85%)
 	@echo "Checking test coverage..."
-	@COVERAGE=$$(go test -coverprofile=coverage.out -covermode=atomic ./... 2>/dev/null | grep "coverage:" | grep -o '[0-9.]*%' | head -1 | sed 's/%//'); \
-	if [ "$${COVERAGE%.*}" -lt 85 ]; then \
+	@go test -coverprofile=coverage.out -covermode=atomic ./... > /dev/null
+	@COVERAGE=$$(go tool cover -func=coverage.out | tail -1 | awk '{print $$3}' | sed 's/%//'); \
+	echo "Current coverage: $${COVERAGE}%"; \
+	if [ "$$(echo "$$COVERAGE < 85" | bc -l)" = "1" ]; then \
 		echo "❌ Test coverage $${COVERAGE}% is below required 85%"; \
 		exit 1; \
 	else \
@@ -230,6 +233,50 @@ ci-lint: ## CI lint target
 
 ci-security: ## CI security scan target
 	gosec -fmt=sarif -out=gosec.sarif ./...
+
+ci-build-all: ## Build all platform binaries for CI
+	@echo "Building all platform binaries..."
+	@mkdir -p dist
+	@for goos in linux darwin windows; do \
+		for goarch in amd64 arm64; do \
+			if [ "$$goos" = "windows" ] && [ "$$goarch" = "arm64" ]; then \
+				continue; \
+			fi; \
+			binary="dist/antimoji_$${goos}_$${goarch}"; \
+			if [ "$$goos" = "windows" ]; then \
+				binary="$${binary}.exe"; \
+			fi; \
+			echo "Building $$goos/$$goarch..."; \
+			GOOS=$$goos GOARCH=$$goarch CGO_ENABLED=0 \
+			go build -ldflags="$(LDFLAGS)" -o "$$binary" ./cmd/antimoji; \
+		done; \
+	done
+	@echo "✅ All platform binaries built successfully"
+
+ci-test-binaries: ci-build-all ## Test all built binaries
+	@echo "Testing built binaries..."
+	@for binary in dist/antimoji_*; do \
+		if [[ "$$binary" == *"windows"* ]]; then \
+			echo "⏭️ Skipping Windows binary: $$binary"; \
+		else \
+			echo "Testing: $$binary"; \
+			chmod +x "$$binary"; \
+			"$$binary" version || echo "❌ Binary test failed: $$binary"; \
+		fi; \
+	done
+
+ci-package: ci-build-all ## Create distribution packages
+	@echo "Creating distribution packages..."
+	@for binary in dist/antimoji_*; do \
+		platform=$$(echo "$$binary" | cut -d'_' -f3); \
+		arch=$$(echo "$$binary" | cut -d'_' -f4 | cut -d'.' -f1); \
+		if [[ "$$binary" == *"windows"* ]]; then \
+			zip -j "dist/antimoji_$${platform}_$${arch}.zip" "$$binary" README.md LICENSE CHANGELOG.md; \
+		else \
+			tar -czf "dist/antimoji_$${platform}_$${arch}.tar.gz" -C dist "$$(basename $$binary)" -C .. README.md LICENSE CHANGELOG.md; \
+		fi; \
+	done
+	@echo "✅ Distribution packages created"
 
 # Docker targets (if needed)
 docker-build: ## Build Docker image

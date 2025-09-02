@@ -115,6 +115,9 @@ release:
     
     # Go Install
     go install github.com/antimoji/antimoji/cmd/antimoji@{{ .Version }}
+    
+    # Docker
+    docker pull ghcr.io/antimoji/antimoji:{{ .Version }}
     ```
     
     ### Usage
@@ -149,6 +152,23 @@ brews:
       bin.install "antimoji"
     test: |
       system "#{bin}/antimoji --version"
+
+# Docker images
+dockers:
+  - image_templates:
+      - "ghcr.io/antimoji/antimoji:{{ .Version }}"
+      - "ghcr.io/antimoji/antimoji:latest"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source=https://github.com/antimoji/antimoji"
+    use: buildx
+    goos: linux
+    goarch: amd64
 
 # Validation hooks
 before:
