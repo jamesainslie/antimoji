@@ -4,12 +4,18 @@
   <h1>Antimoji</h1>
   
   <p>
-    <a href="https://github.com/antimoji/antimoji/actions/workflows/ci.yml"><img src="https://github.com/antimoji/antimoji/workflows/CI/badge.svg" alt="CI"></a>
-    <a href="https://golang.org"><img src="https://img.shields.io/github/go-mod/go-version/antimoji/antimoji" alt="Go Version"></a>
-    <a href="https://github.com/antimoji/antimoji/releases"><img src="https://img.shields.io/github/v/release/antimoji/antimoji" alt="Release"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/github/license/antimoji/antimoji" alt="License"></a>
-    <a href="https://codecov.io/gh/antimoji/antimoji"><img src="https://img.shields.io/codecov/c/github/antimoji/antimoji" alt="Coverage"></a>
-    <a href="https://goreportcard.com/report/github.com/antimoji/antimoji"><img src="https://goreportcard.com/badge/github.com/antimoji/antimoji" alt="Go Report Card"></a>
+    <a href="https://github.com/jamesainslie/antimoji/actions/workflows/ci.yml"><img src="https://github.com/jamesainslie/antimoji/workflows/CI/badge.svg" alt="CI Status"></a>
+    <a href="https://github.com/jamesainslie/antimoji/actions/workflows/build.yml"><img src="https://github.com/jamesainslie/antimoji/workflows/Build/badge.svg" alt="Build Status"></a>
+    <a href="https://github.com/jamesainslie/antimoji/actions/workflows/nightly.yml"><img src="https://github.com/jamesainslie/antimoji/workflows/Nightly%20Build/badge.svg" alt="Nightly Build"></a>
+    <br/>
+    <a href="https://golang.org"><img src="https://img.shields.io/github/go-mod/go-version/jamesainslie/antimoji?color=00ADD8&logo=go" alt="Go Version"></a>
+    <a href="https://github.com/jamesainslie/antimoji/releases"><img src="https://img.shields.io/github/v/release/jamesainslie/antimoji?color=blue&logo=github" alt="Latest Release"></a>
+    <a href="https://github.com/jamesainslie/antimoji/releases"><img src="https://img.shields.io/github/downloads/jamesainslie/antimoji/total?color=green&logo=github" alt="Total Downloads"></a>
+    <br/>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/jamesainslie/antimoji?color=blue" alt="License"></a>
+    <a href="https://codecov.io/gh/jamesainslie/antimoji"><img src="https://img.shields.io/codecov/c/github/jamesainslie/antimoji?logo=codecov" alt="Coverage"></a>
+    <a href="https://goreportcard.com/report/github.com/jamesainslie/antimoji"><img src="https://goreportcard.com/badge/github.com/jamesainslie/antimoji" alt="Go Report Card"></a>
+    <a href="https://pkg.go.dev/github.com/jamesainslie/antimoji"><img src="https://pkg.go.dev/badge/github.com/jamesainslie/antimoji.svg" alt="Go Reference"></a>
   </p>
 </div>
 <!-- markdownlint-enable MD033 MD041 -->
@@ -45,7 +51,7 @@ Antimoji is a high-performance emoji detection and removal tool built with Go us
 
 ### From Source
 ```bash
-git clone https://github.com/antimoji/antimoji.git
+git clone https://github.com/jamesainslie/antimoji.git
 cd antimoji
 make build
 sudo cp bin/antimoji /usr/local/bin/
@@ -53,7 +59,7 @@ sudo cp bin/antimoji /usr/local/bin/
 
 ### Using Go Install
 ```bash
-go install github.com/antimoji/antimoji/cmd/antimoji@latest
+go install github.com/jamesainslie/antimoji/cmd/antimoji@latest
 ```
 
 ## Quick Start
@@ -201,7 +207,7 @@ Infrastructure     → File system, Concurrency, Memory management
 
 ### Development Setup
 ```bash
-git clone https://github.com/antimoji/antimoji.git
+git clone https://github.com/jamesainslie/antimoji.git
 cd antimoji
 make dev-setup
 make test-watch
@@ -263,8 +269,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 - **Documentation**: See [docs/](docs/) directory
-- **Issues**: [GitHub Issues](https://github.com/antimoji/antimoji/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/antimoji/antimoji/discussions)
+- **Issues**: [GitHub Issues](https://github.com/jamesainslie/antimoji/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/jamesainslie/antimoji/discussions)
 - **Email**: james@ainslies.us
 
 ---

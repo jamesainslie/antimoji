@@ -95,7 +95,7 @@ changelog:
 # Release configuration
 release:
   github:
-    owner: antimoji
+    owner: jamesainslie
     name: antimoji
   
   header: |
@@ -114,10 +114,10 @@ release:
     brew install antimoji/tap/antimoji
     
     # Go Install
-    go install github.com/antimoji/antimoji/cmd/antimoji@{{ .Version }}
+    go install github.com/jamesainslie/antimoji/cmd/antimoji@{{ .Version }}
     
     # Docker
-    docker pull ghcr.io/antimoji/antimoji:{{ .Version }}
+    docker pull ghcr.io/jamesainslie/antimoji:{{ .Version }}
     ```
     
     ### Usage
@@ -133,7 +133,7 @@ release:
     ```
   
   footer: |
-    **Full Changelog**: https://github.com/antimoji/antimoji/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/jamesainslie/antimoji/compare/{{ .PreviousTag }}...{{ .Tag }}
     
     ---
     
@@ -143,9 +143,9 @@ release:
 brews:
   - name: antimoji
     repository:
-      owner: antimoji
+      owner: jamesainslie
       name: homebrew-tap
-    homepage: https://github.com/antimoji/antimoji
+    homepage: https://github.com/jamesainslie/antimoji
     description: High-performance emoji detection and removal CLI tool
     license: MIT
     install: |
@@ -156,8 +156,8 @@ brews:
 # Docker images
 dockers:
   - image_templates:
-      - "ghcr.io/antimoji/antimoji:{{ .Version }}"
-      - "ghcr.io/antimoji/antimoji:latest"
+      - "ghcr.io/jamesainslie/antimoji:{{ .Version }}"
+      - "ghcr.io/jamesainslie/antimoji:latest"
     dockerfile: Dockerfile
     build_flag_templates:
       - "--pull"
@@ -165,7 +165,7 @@ dockers:
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source=https://github.com/antimoji/antimoji"
+      - "--label=org.opencontainers.image.source=https://github.com/jamesainslie/antimoji"
     use: buildx
     goos: linux
     goarch: amd64
