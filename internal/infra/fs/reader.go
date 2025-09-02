@@ -57,7 +57,7 @@ func ReadFileStream(filepath string, chunkSize int) types.Result[<-chan []byte] 
 		}
 	}()
 
-	return types.Ok((<-chan []byte)(chunks))
+	return types.Ok[<-chan []byte](chunks)
 }
 
 // IsTextFile determines if a file contains text content by examining its contents.

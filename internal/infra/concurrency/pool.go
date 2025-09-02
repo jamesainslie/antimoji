@@ -104,7 +104,9 @@ func (wp *WorkerPool) Start(ctx context.Context) error {
 	}
 
 	atomic.StoreInt32(&wp.isRunning, 1)
-	atomic.StoreInt32(&wp.activeWorkers, int32(wp.size))
+	if wp.size > 0 && wp.size <= int(^uint32(0)>>1) {
+		atomic.StoreInt32(&wp.activeWorkers, int32(wp.size))
+	}
 
 	// Start result collector
 	go wp.resultCollector(ctx)
