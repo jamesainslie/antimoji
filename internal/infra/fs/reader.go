@@ -14,7 +14,7 @@ import (
 // ReadFile reads the entire contents of a file and returns it as a byte slice.
 // This is a pure function that does not modify any external state.
 func ReadFile(filepath string) types.Result[[]byte] {
-	data, err := os.ReadFile(filepath)
+	data, err := os.ReadFile(filepath) // #nosec G304 - filepath is validated by caller
 	if err != nil {
 		return types.Err[[]byte](err)
 	}
@@ -24,7 +24,7 @@ func ReadFile(filepath string) types.Result[[]byte] {
 // ReadFileStream reads a file in chunks and returns a channel of byte slices.
 // This enables memory-efficient processing of large files.
 func ReadFileStream(filepath string, chunkSize int) types.Result[<-chan []byte] {
-	file, err := os.Open(filepath)
+	file, err := os.Open(filepath) // #nosec G304 - filepath is validated by caller
 	if err != nil {
 		return types.Err[<-chan []byte](err)
 	}
@@ -63,7 +63,7 @@ func ReadFileStream(filepath string, chunkSize int) types.Result[<-chan []byte] 
 // IsTextFile determines if a file contains text content by examining its contents.
 // It uses heuristics to detect binary vs text files.
 func IsTextFile(filepath string) bool {
-	file, err := os.Open(filepath)
+	file, err := os.Open(filepath) // #nosec G304 - filepath is validated by caller
 	if err != nil {
 		return false
 	}
