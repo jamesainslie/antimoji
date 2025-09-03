@@ -69,3 +69,4 @@ dist/
 config.local.yaml
 .env.local
 docs_backup_*/
+bin/
