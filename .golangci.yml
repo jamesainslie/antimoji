@@ -1,21 +1,27 @@
-# Simple golangci-lint configuration that works with both v1 and v2
+# golangci-lint configuration for Antimoji
 # For full documentation, see: https://golangci-lint.run/usage/configuration/
+
+version: 2
+
+run:
+  timeout: 5m
+  go: '1.21'
 
 linters:
   enable:
     - errcheck      # Check for unchecked errors
-    - gosimple      # Simplify code
     - govet         # Report suspicious constructs
     - ineffassign   # Detect ineffectual assignments
     - staticcheck   # Advanced static analysis
-    - typecheck     # Parse and type-check Go code
     - unused        # Find unused code
-    - gofmt         # Check formatting
-    - goimports     # Check imports
-
-run:
-  timeout: 5m
+    - misspell      # Finds commonly misspelled English words
 
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-use-default: false
+  exclude-rules:
+    - path: internal/types/.*\.go
+      text: "avoid meaningless package names"
+      linters:
+        - revive

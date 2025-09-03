@@ -39,13 +39,13 @@ func NewScanCommand() *cobra.Command {
 		Short: "Scan files for emojis without modifying them",
 		Long: `Scan files and directories for emoji usage without making any modifications.
 
-This command analyzes files to detect Unicode emojis, text emoticons, and custom 
-emoji patterns. It respects configuration settings including allowlists and 
+This command analyzes files to detect Unicode emojis, text emoticons, and custom
+emoji patterns. It respects configuration settings including allowlists and
 ignore patterns.
 
 Examples:
   antimoji scan .                    # Scan current directory
-  antimoji scan file.go              # Scan specific file  
+  antimoji scan file.go              # Scan specific file
   antimoji scan --recursive src/     # Scan directory recursively
   antimoji scan --format json .     # Output results as JSON
   antimoji scan --count-only .       # Show only emoji counts
@@ -366,7 +366,7 @@ func displayTableFormat(results []types.ProcessResult, opts *ScanOptions, durati
 }
 
 // displayJSONFormat displays results in JSON format.
-func displayJSONFormat(results []types.ProcessResult, opts *ScanOptions, duration time.Duration) error {
+func displayJSONFormat(results []types.ProcessResult, _ *ScanOptions, duration time.Duration) error {
 	// For now, just print a simple JSON structure
 	// In a real implementation, we'd use encoding/json
 	fmt.Printf(`{"results": %d, "duration": "%v"}`, len(results), duration)
@@ -375,7 +375,7 @@ func displayJSONFormat(results []types.ProcessResult, opts *ScanOptions, duratio
 }
 
 // displayCSVFormat displays results in CSV format.
-func displayCSVFormat(results []types.ProcessResult, opts *ScanOptions, duration time.Duration) error {
+func displayCSVFormat(results []types.ProcessResult, _ *ScanOptions, _ time.Duration) error {
 	fmt.Println("file_path,emoji_count,unique_count,status")
 
 	for _, result := range results {

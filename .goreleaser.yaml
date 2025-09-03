@@ -20,28 +20,28 @@ builds:
   - id: antimoji
     main: ./cmd/antimoji
     binary: antimoji
-    
+
     # Build flags
     flags:
       - -trimpath
-    
+
     # LD flags for version information
     ldflags:
       - -s -w
       - -X main.version={{.Version}}
       - -X main.buildTime={{.Date}}
       - -X main.gitCommit={{.Commit}}
-    
+
     # Target platforms
     goos:
       - linux
       - windows
       - darwin
-    
+
     goarch:
       - amd64
       - arm64
-    
+
     # Ignore combinations
     ignore:
       - goos: windows
@@ -55,7 +55,6 @@ archives:
       - README.md
       - LICENSE
       - CHANGELOG.md
-      - docs/**/*
 
 # Checksum configuration
 checksum:
@@ -97,49 +96,49 @@ release:
   github:
     owner: jamesainslie
     name: antimoji
-  
+
   header: |
     ## Antimoji {{ .Version }}
-    
+
     High-performance emoji detection and removal CLI tool.
-    
+
     ### Installation
-    
+
     #### Binary Download
     Download the appropriate binary for your platform from the assets below.
-    
+
     #### Package Managers
     ```bash
     # macOS (Homebrew)
     brew install antimoji/tap/antimoji
-    
+
     # Go Install
     go install github.com/jamesainslie/antimoji/cmd/antimoji@{{ .Version }}
-    
+
     # Docker
     docker pull ghcr.io/jamesainslie/antimoji:{{ .Version }}
     ```
-    
+
     ### Usage
     ```bash
     # Scan for emojis
     antimoji scan .
-    
+
     # Remove emojis safely
     antimoji clean --backup --in-place .
-    
+
     # High-performance scanning
     antimoji scan --workers 8 --stats .
     ```
-  
+
   footer: |
     **Full Changelog**: https://github.com/jamesainslie/antimoji/compare/{{ .PreviousTag }}...{{ .Tag }}
-    
+
     ---
-    
+
     Built with Go {{ .Env.GOVERSION | default "1.21+" }}
 
-# Homebrew tap (for macOS)
+# Homebrew tap (for macOS) - keeping brews for now until migration
 brews:
   - name: antimoji
     repository:

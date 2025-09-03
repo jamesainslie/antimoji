@@ -189,7 +189,7 @@ func TestResult_FlatMap(t *testing.T) {
 	t.Run("FlatMap preserves original Err", func(t *testing.T) {
 		originalErr := errors.New("original error")
 		result := Err[int](originalErr)
-		chained := FlatMap(result, func(x int) Result[string] {
+		chained := FlatMap(result, func(_ int) Result[string] {
 			return Ok("never reached")
 		})
 
