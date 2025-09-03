@@ -297,6 +297,10 @@ func TestAtomicWriteFile(t *testing.T) {
 	})
 
 	t.Run("preserves permissions on existing file", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Skipping permission preservation test on Windows due to different permission model")
+		}
+		
 		originalContent := "Original content"
 		newContent := "New content"
 		filePath := filepath.Join(tmpDir, "preserve_perms.txt")
