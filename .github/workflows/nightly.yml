@@ -41,11 +41,19 @@ jobs:
     - name: Build and test binary
       run: |
         make build
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          ./bin/antimoji.exe version
-        else
-          ./bin/antimoji version
-        fi
+      shell: bash
+        
+    - name: Test binary (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        .\bin\antimoji.exe version
+      shell: pwsh
+        
+    - name: Test binary (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        ./bin/antimoji version
+      shell: bash
 
   nightly-performance:
     name: Nightly Performance Regression
