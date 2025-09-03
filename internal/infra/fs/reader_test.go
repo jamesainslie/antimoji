@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -45,7 +46,13 @@ func TestReadFile(t *testing.T) {
 
 		result := ReadFile(filePath)
 		assert.True(t, result.IsErr())
-		assert.Contains(t, result.Error().Error(), "no such file")
+		// Cross-platform error message check
+		errorMsg := result.Error().Error()
+		assert.True(t, 
+			strings.Contains(errorMsg, "no such file") || 
+			strings.Contains(errorMsg, "cannot find the file") ||
+			strings.Contains(errorMsg, "does not exist"),
+			"Expected file not found error, got: %s", errorMsg)
 	})
 
 	t.Run("reads large file successfully", func(t *testing.T) {
@@ -63,6 +70,9 @@ func TestReadFile(t *testing.T) {
 	})
 
 	t.Run("handles permission denied", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Skipping permission test on Windows due to different permission model")
+		}
 		if os.Getuid() == 0 {
 			t.Skip("Skipping permission test when running as root")
 		}

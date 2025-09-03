@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/antimoji/antimoji/internal/core/allowlist"
@@ -241,6 +242,9 @@ func TestCreateBackup(t *testing.T) {
 	})
 
 	t.Run("handles permission denied", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Skipping permission test on Windows due to different permission model")
+		}
 		if os.Getuid() == 0 {
 			t.Skip("Skipping permission test when running as root")
 		}
@@ -312,6 +316,9 @@ func TestAtomicWriteFile(t *testing.T) {
 	})
 
 	t.Run("handles permission denied directory", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Skipping permission test on Windows due to different permission model")
+		}
 		if os.Getuid() == 0 {
 			t.Skip("Skipping permission test when running as root")
 		}

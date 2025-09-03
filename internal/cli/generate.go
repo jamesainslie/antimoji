@@ -547,19 +547,24 @@ func categorizeFile(filePath string) string {
 	fileName := filepath.Base(filePath)
 	ext := filepath.Ext(fileName)
 	dir := filepath.Dir(filePath)
+	
+	// Normalize path separators for cross-platform compatibility
+	normalizedPath := filepath.ToSlash(filePath)
+	normalizedDir := filepath.ToSlash(dir)
 
 	// Check for test files first (most specific)
 	if strings.Contains(fileName, "_test.") || strings.Contains(fileName, "test_") ||
-		strings.Contains(dir, "/test/") || strings.Contains(dir, "/tests/") ||
-		strings.Contains(dir, "/testdata/") || strings.Contains(dir, "/fixtures/") ||
-		strings.HasSuffix(dir, "/test") || strings.HasSuffix(dir, "/tests") ||
-		strings.HasSuffix(dir, "/testdata") || strings.HasSuffix(dir, "/fixtures") {
+		strings.Contains(normalizedDir, "/test/") || strings.Contains(normalizedDir, "/tests/") ||
+		strings.Contains(normalizedDir, "/testdata/") || strings.Contains(normalizedDir, "/fixtures/") ||
+		strings.HasSuffix(normalizedDir, "/test") || strings.HasSuffix(normalizedDir, "/tests") ||
+		strings.HasSuffix(normalizedDir, "/testdata") || strings.HasSuffix(normalizedDir, "/fixtures") ||
+		strings.Contains(normalizedPath, "/test/") || strings.Contains(normalizedPath, "/tests/") {
 		return "test"
 	}
 
 	// Check for CI files
-	if strings.Contains(dir, ".github") || strings.Contains(dir, "scripts") ||
-		(ext == ".yml" || ext == ".yaml") && (strings.Contains(dir, ".github") || strings.Contains(fileName, "ci")) {
+	if strings.Contains(normalizedDir, ".github") || strings.Contains(normalizedDir, "scripts") ||
+		(ext == ".yml" || ext == ".yaml") && (strings.Contains(normalizedDir, ".github") || strings.Contains(fileName, "ci")) {
 		return "ci"
 	}
 
