@@ -1,0 +1,101 @@
+# Pre-commit configuration for Antimoji project
+# This configuration uses antimoji to lint its own codebase
+
+repos:
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.md$
+      - id: end-of-file-fixer
+        exclude: \.md$
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+
+  # Go-specific hooks
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+      - id: go-vet
+      - id: go-mod-tidy
+
+  # Local antimoji hooks (using the built binary)
+  - repo: local
+    hooks:
+      # Strict emoji linting for source code
+      - id: antimoji-source-lint
+        name: Antimoji Source Code Linter
+        description: Ensure no emojis in production source code
+        entry: bin/antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 --quiet
+        language: system
+        files: \.(go|js|ts|jsx|tsx|py|rb|java|c|cpp|h|hpp|rs|php|swift|kt|scala)$
+        exclude: |
+          (?x)^(
+            .*_test\.go|
+            .*/test/.*|
+            .*/tests/.*|
+            .*/testdata/.*|
+            .*/fixtures/.*|
+            .*/mocks/.*|
+            vendor/.*|
+            dist/.*|
+            bin/.*|
+            cmd/.*
+          )$
+        pass_filenames: true
+        require_serial: false
+
+      # Build antimoji before running hooks (ensures binary is available)
+      - id: build-antimoji
+        name: Build Antimoji Binary
+        description: Build antimoji binary for other hooks
+        entry: make build
+        language: system
+        files: \.(go)$
+        pass_filenames: false
+        require_serial: true
+        stages: [pre-commit, pre-push]
+
+      # Generate antimoji configuration if it doesn't exist
+      - id: ensure-antimoji-config
+        name: Ensure Antimoji Configuration
+        description: Generate .antimoji.yaml if it doesn't exist
+        entry: bash -c 'if [ ! -f .antimoji.yaml ]; then make generate-allowlist; fi'
+        language: system
+        files: \.antimoji\.yaml$
+        pass_filenames: false
+        require_serial: true
+        always_run: true
+        stages: [pre-commit]
+
+      # Auto-clean emojis from source code (with backup)
+      - id: antimoji-auto-clean
+        name: Antimoji Auto-Clean
+        description: Automatically remove emojis from source code files
+        entry: bin/antimoji clean --config=.antimoji.yaml --profile=pre-commit --in-place --backup --quiet
+        language: system
+        files: \.(go|js|ts|jsx|tsx|py|rb|java|c|cpp|h|hpp|rs|php|swift|kt|scala)$
+        exclude: |
+          (?x)^(
+            .*_test\.go|
+            .*/test/.*|
+            .*/tests/.*|
+            .*/testdata/.*|
+            .*/fixtures/.*|
+            .*/mocks/.*|
+            vendor/.*|
+            dist/.*|
+            bin/.*|
+            internal/cli/generate\.go|
+            internal/config/config\.go|
+            internal/core/allowlist/allowlist\.go|
+            internal/core/detector/detector\.go|
+            internal/cli/root\.go|
+            internal/types/detection\.go
+          )$
+        pass_filenames: true
+        require_serial: false
+        stages: [pre-commit]
