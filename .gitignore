@@ -68,3 +68,4 @@ dist/
 # Local configuration overrides
 config.local.yaml
 .env.local
+docs_backup_*/
