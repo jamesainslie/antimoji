@@ -189,7 +189,7 @@ func CreateBackup(filePath string) types.Result[string] {
 	backupPath := filepath.Join(dir, fmt.Sprintf("%s.backup.%s%s", name, timestamp, ext))
 
 	// Read original content
-	content, err := os.ReadFile(filePath)
+	content, err := os.ReadFile(filePath) // #nosec G304 - filepath is validated by caller
 	if err != nil {
 		return types.Err[string](err)
 	}

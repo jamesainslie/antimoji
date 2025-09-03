@@ -671,7 +671,7 @@ func outputConfiguration(config *AllowlistConfig, opts *GenerateOptions, duratio
 		if verbose {
 			fmt.Fprintf(os.Stderr, "Writing configuration to %s\n", opts.Output)
 		}
-		return os.WriteFile(opts.Output, output, 0644)
+		return os.WriteFile(opts.Output, output, 0600)
 	}
 	fmt.Print(string(output))
 	return nil
