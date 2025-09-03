@@ -46,7 +46,11 @@ jobs:
     - name: Test binary (Windows)
       if: runner.os == 'Windows'
       run: |
-        & ".\bin\antimoji.exe" version
+        if (Test-Path ".\bin\antimoji.exe") {
+          .\bin\antimoji.exe version
+        } else {
+          .\bin\antimoji version
+        }
       shell: pwsh
         
     - name: Test binary (Unix)
@@ -111,51 +115,25 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
         cache: true
         
-    - name: Run comprehensive security scan
-      run: |
-        # Install security tools
-        go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
-        go install honnef.co/go/tools/cmd/staticcheck@latest
+    - name: Run GoSec Security Scan
+      uses: securecodewarrior/github-action-gosec@master
+      with:
+        args: '-no-fail -fmt sarif -out results.sarif ./...'
+      continue-on-error: true
         
-        echo "## Nightly Security Report" >> $GITHUB_STEP_SUMMARY
-        echo "Date: $(date)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+    - name: Upload SARIF file
+      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: results.sarif
+      continue-on-error: true
         
-        # Run gosec (capture exit code to handle properly)
-        echo "### GoSec Security Scan" >> $GITHUB_STEP_SUMMARY
-        set +e  # Disable exit on error temporarily
-        gosec -quiet ./... > gosec_output.txt 2>&1
-        gosec_exit_code=$?
-        set -e  # Re-enable exit on error
-        
-        if [ $gosec_exit_code -eq 0 ]; then
-          echo "✅ No security issues found" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "⚠️ Security issues detected:" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          cat gosec_output.txt >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        fi
-        
-        # Run staticcheck (capture exit code to handle properly)
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### StaticCheck Analysis" >> $GITHUB_STEP_SUMMARY
-        set +e  # Disable exit on error temporarily
-        staticcheck ./... > staticcheck_output.txt 2>&1
-        staticcheck_exit_code=$?
-        set -e  # Re-enable exit on error
-        
-        if [ $staticcheck_exit_code -eq 0 ]; then
-          echo "✅ No static analysis issues found" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "⚠️ Static analysis issues detected:" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          cat staticcheck_output.txt >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        fi
-        
-        # Exit with success regardless of findings (this is informational)
-        exit 0
+    - name: Run StaticCheck
+      uses: dominikh/staticcheck-action@v1.3.0
+      with:
+        version: "2023.1.7"
+        install-go: false
+      continue-on-error: true
 
   nightly-integration:
     name: Nightly Integration Test

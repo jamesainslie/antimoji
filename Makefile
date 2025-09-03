@@ -19,7 +19,11 @@ LDFLAGS = -X main.version=$(VERSION) -X main.buildTime=$(BUILD_TIME) -X main.git
 # Core targets
 build: ## Build the antimoji binary
 	@echo "Building antimoji..."
-	go build -ldflags="$(LDFLAGS)" -o bin/antimoji ./cmd/antimoji
+	@if [ "$(OS)" = "Windows_NT" ]; then \
+		go build -ldflags="$(LDFLAGS)" -o bin/antimoji.exe ./cmd/antimoji; \
+	else \
+		go build -ldflags="$(LDFLAGS)" -o bin/antimoji ./cmd/antimoji; \
+	fi
 
 build-release: ## Build optimized release binary
 	@echo "Building optimized release binary..."
