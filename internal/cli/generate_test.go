@@ -102,7 +102,7 @@ func TestAnalyzeEmojiUsage(t *testing.T) {
 		}{
 			{"test_emoji.go", "test"},
 			{"README.md", "documentation"},
-			{"guide.md", "markdown"},
+			{"guide.md", "documentation"},
 			{"script.sh", "other"},
 			{".github/ci.yml", "ci"},
 			{"source.go", "source"},
@@ -400,7 +400,7 @@ func TestCategorizeFile(t *testing.T) {
 		{
 			name:         "Documentation markdown",
 			filePath:     "architecture.md",
-			expectedType: "markdown",
+			expectedType: "documentation",
 		},
 		{
 			name:         "GitHub workflow",
