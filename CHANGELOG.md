@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.2] - 2025-09-03
+
+### Fixed
+- **Docker Build Issues**: Resolved Docker build context problems in GoReleaser release process
+- **Cross-Platform Compatibility**: Added comprehensive Windows support for all tests and builds
+- **CI/CD Pipeline**: Fixed golangci-lint v2 configuration compatibility and workflow issues
+- **File Path Handling**: Improved cross-platform file path categorization using `filepath.ToSlash()`
+- **Security Scanning**: Resolved gosec security scan integration in CI environment
+- **Build System**: Added proper Windows `.exe` binary generation in CI workflows
+- **Test Reliability**: Fixed timing-sensitive concurrency tests with platform-specific tolerances
+- **Error Handling**: Enhanced error message assertions for Windows vs Unix compatibility
+
+### Changed
+- **golangci-lint**: Updated to v2 with proper configuration schema
+- **Docker Base Image**: Switched to scratch image for minimal size and better reliability
+- **CI Workflows**: Improved Windows PowerShell syntax and cross-platform shell handling
+- **Test Coverage**: Maintained 87.3% coverage across all platforms
+
+### Security
+- **File Permissions**: Fixed configuration file permissions from 0644 to 0600
+- **Path Validation**: Added proper nosec annotations for intentional file operations
+- **Build Security**: Ensured all security scans pass with zero issues
+
 ## [v0.6.0] - 2024-12-02
 
 ### Added
