@@ -13,7 +13,7 @@ func NewVersionCommand() *cobra.Command {
 		Use:   "version",
 		Short: "Show version information",
 		Long:  `Display detailed version information including build time and git commit.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Printf("antimoji version %s\n", buildVersion)
 			fmt.Printf("Build time: %s\n", buildTime)
 			fmt.Printf("Git commit: %s\n", buildGitCommit)

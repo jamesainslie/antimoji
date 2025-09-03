@@ -117,7 +117,7 @@ Examples:
 }
 
 // runGenerate executes the generate command logic.
-func runGenerate(cmd *cobra.Command, args []string, opts *GenerateOptions) error {
+func runGenerate(_ *cobra.Command, args []string, opts *GenerateOptions) error {
 	startTime := time.Now()
 
 	// If no paths provided, use current directory
@@ -672,10 +672,9 @@ func outputConfiguration(config *AllowlistConfig, opts *GenerateOptions, duratio
 			fmt.Fprintf(os.Stderr, "Writing configuration to %s\n", opts.Output)
 		}
 		return os.WriteFile(opts.Output, output, 0644)
-	} else {
-		fmt.Print(string(output))
-		return nil
 	}
+	fmt.Print(string(output))
+	return nil
 }
 
 // isTextFile determines if a file is likely a text file based on extension.

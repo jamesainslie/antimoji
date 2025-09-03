@@ -1,0 +1,39 @@
+# Build artifacts
+bin/
+dist/
+coverage.out
+coverage.html
+*.backup.*
+
+# Development files
+.git/
+.github/
+.vscode/
+.idea/
+
+# Documentation and non-runtime files
+docs/
+pics/
+scripts/
+test/
+*.md
+*.txt
+
+# Go specific
+go.mod
+go.sum
+vendor/
+
+# CI/CD files
+Makefile
+.goreleaser.yaml
+.pre-commit-config.yaml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp

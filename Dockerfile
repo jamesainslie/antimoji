@@ -1,34 +1,8 @@
-# Build stage
-FROM golang:1.21-alpine AS builder
+# Use a minimal base image with certificates already included
+FROM gcr.io/distroless/static-debian12:latest
 
-# Install build dependencies
-RUN apk add --no-cache git ca-certificates
-
-# Set working directory
-WORKDIR /build
-
-# Copy go mod files
-COPY go.mod go.sum ./
-
-# Download dependencies
-RUN go mod download
-
-# Copy source code
-COPY . .
-
-# Build the binary
-RUN CGO_ENABLED=0 GOOS=linux go build \
-    -ldflags="-s -w -X github.com/antimoji/antimoji/cmd/antimoji.version=${VERSION:-dev}" \
-    -o antimoji ./cmd/antimoji
-
-# Final stage
-FROM scratch
-
-# Copy ca-certificates for HTTPS
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-
-# Copy the binary
-COPY --from=builder /build/antimoji /antimoji
+# Copy the pre-built binary from GoReleaser context
+COPY antimoji /antimoji
 
 # Set entrypoint
 ENTRYPOINT ["/antimoji"]

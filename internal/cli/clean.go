@@ -33,7 +33,7 @@ func NewCleanCommand() *cobra.Command {
 		Short: "Remove emojis from files",
 		Long: `Remove emojis from files and directories with optional backup and allowlist support.
 
-This command modifies files to remove detected emojis while preserving code 
+This command modifies files to remove detected emojis while preserving code
 structure and functionality. It supports atomic file operations, backup creation,
 and allowlist filtering to keep certain emojis.
 
@@ -63,7 +63,7 @@ Examples:
 }
 
 // runClean executes the clean command logic.
-func runClean(cmd *cobra.Command, args []string, opts *CleanOptions) error {
+func runClean(_ *cobra.Command, args []string, opts *CleanOptions) error {
 	startTime := time.Now()
 
 	// Validate options
