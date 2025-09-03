@@ -54,8 +54,12 @@ func TestWorkerPool_Lifecycle(t *testing.T) {
 		// Stop the pool
 		cancel()
 
-		// Give workers time to stop
-		time.Sleep(10 * time.Millisecond)
+		// Give workers time to stop - more time needed on Windows
+		sleepTime := 10 * time.Millisecond
+		if runtime.GOOS == "windows" {
+			sleepTime = 100 * time.Millisecond
+		}
+		time.Sleep(sleepTime)
 
 		// Verify workers stopped
 		assert.False(t, pool.IsRunning())
