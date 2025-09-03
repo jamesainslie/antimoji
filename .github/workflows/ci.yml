@@ -122,6 +122,45 @@ jobs:
         version: latest
         args: --timeout=5m
 
+  antimoji-lint:
+    name: Antimoji Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+      
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+        
+    - name: Build antimoji
+      run: make build
+      
+    - name: Run antimoji linter
+      run: |
+        echo "Running antimoji on its own codebase..."
+        if [ -f ".antimoji.yaml" ]; then
+          echo "Using existing .antimoji.yaml configuration"
+          ./bin/antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 --format=table .
+        else
+          echo "No .antimoji.yaml found. Generating allowlist and running strict check..."
+          ./bin/antimoji generate --type=ci-lint --output=.antimoji-generated.yaml .
+          ./bin/antimoji scan --config=.antimoji-generated.yaml --profile=ci-lint --threshold=0 --format=table .
+        fi
+        
+    - name: Upload antimoji results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: antimoji-lint-results
+        path: |
+          antimoji-results.json
+          .antimoji-generated.yaml
+        retention-days: 7
+
   security:
     name: Security Scan
     runs-on: ubuntu-latest
@@ -269,7 +308,7 @@ jobs:
   quality-gate:
     name: Quality Gate
     runs-on: ubuntu-latest
-    needs: [test, lint, security, build]
+    needs: [test, lint, antimoji-lint, security, build]
     if: always()
     
     steps:
@@ -282,6 +321,11 @@ jobs:
         
         if [[ "${{ needs.lint.result }}" != "success" ]]; then
           echo "❌ Linting failed"
+          exit 1
+        fi
+        
+        if [[ "${{ needs.antimoji-lint.result }}" != "success" ]]; then
+          echo "❌ Antimoji linting failed"
           exit 1
         fi
         
@@ -301,6 +345,7 @@ jobs:
         echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Tests: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Linting: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Antimoji Linting: ${{ needs.antimoji-lint.result }}" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Security: ${{ needs.security.result }}" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Cross-platform builds: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
