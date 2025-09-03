@@ -547,7 +547,7 @@ func categorizeFile(filePath string) string {
 	fileName := filepath.Base(filePath)
 	ext := filepath.Ext(fileName)
 	dir := filepath.Dir(filePath)
-	
+
 	// Normalize path separators for cross-platform compatibility
 	normalizedPath := filepath.ToSlash(filePath)
 	normalizedDir := filepath.ToSlash(dir)

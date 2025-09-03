@@ -56,10 +56,10 @@ profiles:
 		assert.True(t, result.IsErr())
 		// Cross-platform error message check
 		errorMsg := result.Error().Error()
-		assert.True(t, 
-			strings.Contains(errorMsg, "no such file") || 
-			strings.Contains(errorMsg, "cannot find the file") ||
-			strings.Contains(errorMsg, "does not exist"),
+		assert.True(t,
+			strings.Contains(errorMsg, "no such file") ||
+				strings.Contains(errorMsg, "cannot find the file") ||
+				strings.Contains(errorMsg, "does not exist"),
 			"Expected file not found error, got: %s", errorMsg)
 	})
 
