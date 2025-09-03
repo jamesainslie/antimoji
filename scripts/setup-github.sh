@@ -44,7 +44,7 @@ choose_remote_type() {
     echo "1) HTTPS (recommended for most users)"
     echo "2) SSH (if you have SSH keys configured)"
     read -p "Enter choice (1 or 2): " choice
-    
+
     case $choice in
         1) echo "https" ;;
         2) echo "ssh" ;;
@@ -57,7 +57,7 @@ if git remote get-url origin >/dev/null 2>&1; then
     current_remote=$(git remote get-url origin)
     echo -e "${YELLOW}Git remote 'origin' already configured:${NC} $current_remote"
     read -p "Do you want to update it? (y/N): " update_remote
-    
+
     if [[ $update_remote =~ ^[Yy]$ ]]; then
         git remote remove origin
         echo "Removed existing remote"
@@ -105,7 +105,7 @@ read -p "Do you want to push your code now? (Y/n): " push_now
 if [[ ! $push_now =~ ^[Nn]$ ]]; then
     echo ""
     echo -e "${BLUE}Pushing to GitHub...${NC}"
-    
+
     if git push -u origin main; then
         echo -e "${GREEN}Successfully pushed to GitHub${NC}"
         echo ""
@@ -114,8 +114,8 @@ if [[ ! $push_now =~ ^[Nn]$ ]]; then
         echo "Next steps:"
         echo "1. Go to https://github.com/$username/antimoji"
         echo "2. Check the Actions tab to see your CI workflow running"
-        echo "3. Review docs/ci-cd-setup.md for configuration options"
-        echo "4. Review docs/release-process.md for release instructions"
+        echo "3. Review project documentation for configuration options"
+        echo "4. Review project documentation for release instructions"
         echo ""
         echo "To create your first release:"
         echo "  make release-prepare VERSION=v1.0.0"
@@ -132,4 +132,4 @@ fi
 
 echo ""
 echo -e "${BLUE}Repository URL:${NC} https://github.com/$username/antimoji"
-echo -e "${BLUE}Documentation:${NC} See docs/ directory for detailed guides"
+echo -e "${BLUE}Documentation:${NC} See project documentation for detailed guides"

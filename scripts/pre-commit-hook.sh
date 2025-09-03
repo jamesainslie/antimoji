@@ -69,27 +69,27 @@ while IFS= read -r file; do
             *.go|*.js|*.ts|*.jsx|*.tsx|*.py|*.rb|*.java|*.c|*.cpp|*.h|*.hpp|*.rs|*.php|*.swift|*.kt|*.scala)
                 # Skip test files and other excluded patterns
                 case "$file" in
-                    *_test.go|*/test/*|*/tests/*|*/testdata/*|*/fixtures/*|*/mocks/*|README.md|CHANGELOG.md|docs/*|.github/*|scripts/*|vendor/*|dist/*|bin/*|generate.go|config.go|allowlist.go|detector.go|root.go|detection.go)
+                    *_test.go|*/test/*|*/tests/*|*/testdata/*|*/fixtures/*|*/mocks/*|README.md|CHANGELOG.md|.github/*|scripts/*|vendor/*|dist/*|bin/*|generate.go|config.go|allowlist.go|detector.go|root.go|detection.go)
                         continue
                         ;;
                     *)
                         echo -e "${BLUE}  Processing: $file${NC}"
-                        
+
                         # First, check if file has emojis
                         SCAN_OUTPUT=$(./bin/antimoji scan --config=.antimoji.yaml --profile=pre-commit --ignore-allowlist --format=table "$file" 2>&1)
                         EMOJI_COUNT=$(echo "$SCAN_OUTPUT" | grep "Summary:" | awk '{print $2}')
-                        
+
                         if [ -n "$EMOJI_COUNT" ] && [ "$EMOJI_COUNT" -gt 0 ]; then
                             echo -e "${YELLOW}    Found $EMOJI_COUNT emoji(s) - cleaning...${NC}"
-                            
+
                             # Clean the file (with backup)
                             CLEAN_OUTPUT=$(./bin/antimoji clean --config=.antimoji.yaml --profile=pre-commit --in-place --backup --quiet "$file" 2>&1)
-                            
+
                             if [ $? -eq 0 ]; then
                                 echo -e "${GREEN}    ✅ Cleaned $file${NC}"
                                 CLEANED_FILES=$((CLEANED_FILES + 1))
                                 TOTAL_EMOJIS_REMOVED=$((TOTAL_EMOJIS_REMOVED + EMOJI_COUNT))
-                                
+
                                 # Re-stage the cleaned file
                                 git add "$file"
                                 echo -e "${CYAN}    📝 Re-staged cleaned file${NC}"

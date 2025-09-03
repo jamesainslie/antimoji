@@ -23,7 +23,7 @@ fi
 check_file() {
     local file="$1"
     local description="$2"
-    
+
     if [ -f "$file" ]; then
         echo -e "${GREEN}✓${NC} $description: $file"
         return 0
@@ -37,7 +37,7 @@ check_file() {
 check_dir() {
     local dir="$1"
     local description="$2"
-    
+
     if [ -d "$dir" ]; then
         echo -e "${GREEN}✓${NC} $description: $dir"
         return 0
@@ -51,7 +51,7 @@ check_dir() {
 check_command() {
     local cmd="$1"
     local description="$2"
-    
+
     if command -v "$cmd" >/dev/null 2>&1; then
         echo -e "${GREEN}✓${NC} $description: $(command -v $cmd)"
         return 0
@@ -87,9 +87,6 @@ echo -e "${BLUE}3. Documentation Check${NC}"
 echo "----------------------"
 
 docs_ok=true
-check_file "docs/ci-cd-setup.md" "CI/CD setup guide" || docs_ok=false
-check_file "docs/release-process.md" "Release process guide" || docs_ok=false
-check_file "docs/github-setup.md" "GitHub setup guide" || docs_ok=false
 check_file "README.md" "Project README" || docs_ok=false
 check_file "CHANGELOG.md" "Changelog" || docs_ok=false
 
@@ -122,7 +119,7 @@ git_ok=true
 if git remote get-url origin >/dev/null 2>&1; then
     remote_url=$(git remote get-url origin)
     echo -e "${GREEN}✓${NC} Git remote configured: $remote_url"
-    
+
     # Check if remote is reachable
     if git ls-remote origin >/dev/null 2>&1; then
         echo -e "${GREEN}✓${NC} Remote repository accessible"
@@ -154,7 +151,7 @@ echo "Testing local build..."
 
 if make build >/dev/null 2>&1; then
     echo -e "${GREEN}✓${NC} Local build successful"
-    
+
     if [ -f "bin/antimoji" ]; then
         version_output=$(./bin/antimoji version 2>/dev/null || echo "version check failed")
         echo -e "${GREEN}✓${NC} Binary executable: $version_output"
@@ -241,7 +238,4 @@ else
     echo ""
 fi
 
-echo "For detailed setup instructions, see:"
-echo "- docs/github-setup.md"
-echo "- docs/ci-cd-setup.md"
-echo "- docs/release-process.md"
+echo "For detailed setup instructions, see project documentation."

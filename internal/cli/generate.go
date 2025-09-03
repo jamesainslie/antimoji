@@ -357,12 +357,12 @@ func generateCILintAllowlist(analysis *EmojiUsageAnalysis, opts *GenerateOptions
 
 	fileIgnoreList := []string{
 		"**/*_test.go", "**/test/**/*", "**/testdata/**/*", "**/fixtures/**/*",
-		"README.md", "CHANGELOG.md", "docs/**/*.md", ".github/**/*", "scripts/**/*",
+		"README.md", "CHANGELOG.md", ".github/**/*", "scripts/**/*",
 		"vendor/**/*", "dist/**/*", "bin/**/*",
 	}
 
 	directoryIgnoreList := []string{
-		".git", "vendor", "dist", "bin", "test", "tests", "testdata", "fixtures", ".github", "docs",
+		".git", "vendor", "dist", "bin", "test", "tests", "testdata", "fixtures", ".github",
 	}
 
 	return removeDuplicates(allowedEmojis), fileIgnoreList, directoryIgnoreList
@@ -417,12 +417,12 @@ func generateDocsOnlyAllowlist(analysis *EmojiUsageAnalysis, opts *GenerateOptio
 	allowedEmojis = filterByMinUsage(allowedEmojis, analysis, opts.MinUsage)
 
 	fileIgnoreList := []string{
-		"README.md", "CHANGELOG.md", "docs/**/*.md", "**/*.md",
+		"README.md", "CHANGELOG.md", "**/*.md",
 		"vendor/**/*", "dist/**/*", "bin/**/*",
 	}
 
 	directoryIgnoreList := []string{
-		".git", "vendor", "dist", "bin", "docs",
+		".git", "vendor", "dist", "bin",
 	}
 
 	return removeDuplicates(allowedEmojis), fileIgnoreList, directoryIgnoreList
