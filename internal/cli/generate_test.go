@@ -139,7 +139,7 @@ func TestAnalyzeEmojiUsage(t *testing.T) {
 }
 
 func TestGenerateAllowlistConfig(t *testing.T) {
-	// Create mock analysis data
+	// Create mock analysis data that matches the actual implementation
 	analysis := &EmojiUsageAnalysis{
 		EmojisByCategory: map[string][]EmojiUsage{
 			"unicode": {
@@ -148,6 +148,18 @@ func TestGenerateAllowlistConfig(t *testing.T) {
 			},
 			"emoticon": {
 				{Emoji: ":)", Count: 2, Files: []string{"test1.go"}, Category: "emoticon", FileTypes: []string{"test"}},
+			},
+		},
+		EmojisByFile: map[string][]EmojiUsage{
+			"test1.go": {
+				{Emoji: "😀", Count: 3, Category: "unicode"},
+				{Emoji: ":)", Count: 2, Category: "emoticon"},
+			},
+			"test2.go": {
+				{Emoji: "😀", Count: 2, Category: "unicode"},
+			},
+			"README.md": {
+				{Emoji: "✅", Count: 3, Category: "unicode"},
 			},
 		},
 		FilesByType: map[string][]string{
