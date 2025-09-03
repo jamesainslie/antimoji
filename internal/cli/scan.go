@@ -151,18 +151,23 @@ func runScan(cmd *cobra.Command, args []string, opts *ScanOptions) error {
 		}
 	}
 
-	// Display results
-	if err := displayResults(results, opts, time.Since(startTime)); err != nil {
-		return fmt.Errorf("failed to display results: %w", err)
+	// Display results (unless in quiet mode)
+	if !quiet {
+		if err := displayResults(results, opts, time.Since(startTime)); err != nil {
+			return fmt.Errorf("failed to display results: %w", err)
+		}
 	}
 
-	// Check threshold for linting mode
-	if opts.Threshold > 0 {
+	// Check threshold for linting mode (including zero threshold for strict linting)
+	if cmd.Flags().Changed("threshold") {
 		totalEmojis := 0
 		for _, result := range results {
 			totalEmojis += result.DetectionResult.TotalCount
 		}
 		if totalEmojis > opts.Threshold {
+			if !quiet {
+				fmt.Fprintf(os.Stderr, "Emoji threshold exceeded: found %d emojis (limit: %d)\n", totalEmojis, opts.Threshold)
+			}
 			return fmt.Errorf("emoji threshold exceeded: found %d emojis (limit: %d)", totalEmojis, opts.Threshold)
 		}
 	}
