@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -53,7 +54,13 @@ profiles:
 
 		result := LoadConfig(configPath)
 		assert.True(t, result.IsErr())
-		assert.Contains(t, result.Error().Error(), "no such file")
+		// Cross-platform error message check
+		errorMsg := result.Error().Error()
+		assert.True(t, 
+			strings.Contains(errorMsg, "no such file") || 
+			strings.Contains(errorMsg, "cannot find the file") ||
+			strings.Contains(errorMsg, "does not exist"),
+			"Expected file not found error, got: %s", errorMsg)
 	})
 
 	t.Run("handles invalid YAML", func(t *testing.T) {
