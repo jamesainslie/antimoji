@@ -1,5 +1,5 @@
-# Use a minimal base image with certificates already included
-FROM gcr.io/distroless/static-debian12:latest
+# Use scratch for minimal image size - static binary doesn't need OS
+FROM scratch
 
 # Copy the pre-built binary from GoReleaser context
 COPY antimoji /antimoji
