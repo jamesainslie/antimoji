@@ -20,9 +20,9 @@
 </div>
 <!-- markdownlint-enable MD033 MD041 -->
 
-> A blazing-fast CLI tool for detecting and removing emojis from code files and documentation.
+> A blazing-fast CLI tool and linter for detecting and removing emojis from code files and documentation.
 
-Antimoji is a high-performance emoji detection and removal tool built with Go using functional programming principles. It provides comprehensive emoji scanning and cleaning capabilities for maintaining professional, emoji-free codebases.
+Antimoji is a high-performance emoji detection and removal tool built with Go using functional programming principles. **Designed primarily as a linter**, it provides comprehensive emoji scanning and cleaning capabilities for maintaining professional, emoji-free codebases with seamless CI/CD and pre-commit integration.
 
 ## Features
 
@@ -41,11 +41,18 @@ Antimoji is a high-performance emoji detection and removal tool built with Go us
 - **Binary File Detection**: Automatically skips non-text files
 
 ### CLI Interface
-- **Multiple Commands**: `scan` for detection, `clean` for removal
+- **Multiple Commands**: `scan` for detection, `clean` for removal, `generate` for configuration
 - **Output Formats**: Table, JSON, and CSV formats
 - **Configuration Profiles**: Default, strict, and CI/CD profiles
 - **Performance Statistics**: Built-in benchmarking and metrics
 - **Dry-Run Mode**: Preview changes without file modification
+
+### Linting & Integration
+- **CI/CD Linting**: Designed for automated emoji policy enforcement
+- **Pre-commit Hooks**: Auto-clean emojis before commits with backup creation
+- **Configurable Allowlists**: Smart emoji filtering for legitimate use cases
+- **Self-Linting**: Antimoji uses itself to maintain emoji-free codebase
+- **Threshold-based Policies**: Fail builds when emoji limits exceeded
 
 ## Installation
 
@@ -92,6 +99,38 @@ antimoji clean --replace "[EMOJI]" --in-place .
 
 # Respect allowlist configuration
 antimoji clean --respect-allowlist --in-place .
+```
+
+## Linting Policies & Configuration
+
+### Policy Enforcement
+
+Antimoji supports multiple emoji policies for different use cases:
+
+```bash
+# Zero-tolerance policy (strict linting)
+antimoji scan --threshold=0 --ignore-allowlist .
+
+# Allowlist-based policy (recommended)
+antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 .
+
+# Permissive policy (development)
+antimoji scan --threshold=10 .
+```
+
+### Configuration Generation
+
+```bash
+# Generate configuration based on current project usage
+antimoji generate --type=ci-lint --output=.antimoji.yaml .
+
+# Available generation types:
+# ci-lint    - Strict allowlist for CI/CD linting
+# dev        - Permissive allowlist for development
+# test-only  - Only allow emojis found in test files
+# docs-only  - Only allow emojis found in documentation
+# minimal    - Only frequently used emojis
+# full       - All found emojis with categorization
 ```
 
 ## Configuration
@@ -144,52 +183,251 @@ Optimized for CI/CD pipelines with JSON output and specific error codes.
 
 ### Development Workflow
 ```bash
-# Check for emojis before commit
-antimoji scan . --threshold 0 --fail-on-found
-
-# Clean codebase maintaining status emojis
-antimoji clean --respect-allowlist --backup --in-place .
-
-# Generate report for code review
-antimoji scan . --format json > emoji-report.json
-```
-
-### CI/CD Integration
-```bash
-# Fail build if emojis found
-antimoji scan --threshold=0 --format=json --quiet .
-
-# Use configuration-based linting
-antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 .
-
-# Generate allowlist configuration
+# Generate project-specific allowlist
 antimoji generate --type=ci-lint --output=.antimoji.yaml .
 
-# Clean with strict policy
-antimoji clean --profile=strict --in-place .
+# Check for emojis before commit
+antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 .
+
+# Clean codebase maintaining allowlisted emojis
+antimoji clean --config=.antimoji.yaml --respect-allowlist --backup --in-place .
+
+# Generate report for code review
+antimoji scan --config=.antimoji.yaml --format=json > emoji-report.json
+```
+
+### Quick Start for Linting
+```bash
+# Install and set up linting in 3 commands
+go install github.com/jamesainslie/antimoji/cmd/antimoji@latest
+antimoji generate --type=ci-lint --output=.antimoji.yaml .
+antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 .
+```
+
+## Linting Integration
+
+Antimoji is designed primarily as a **linter** for automated emoji policy enforcement in development workflows.
+
+### Generate Allowlist Configuration
+
+```bash
+# Analyze current project and generate strict allowlist
+antimoji generate --type=ci-lint --output=.antimoji.yaml .
+
+# Generate development-friendly allowlist
+antimoji generate --type=dev --output=.antimoji-dev.yaml .
+
+# Generate minimal allowlist (only frequently used emojis)
+antimoji generate --type=minimal --min-usage=3 .
 ```
 
 ### Pre-commit Integration
+
+**Automatic Setup:**
 ```bash
-# Install pre-commit framework
+# Install pre-commit framework and antimoji hooks
 make install-pre-commit
 
 # Generate antimoji configuration
 make generate-allowlist
 
-# Test pre-commit hooks
+# Test the integration
 make test-pre-commit
 ```
 
-Add to your `.pre-commit-config.yaml`:
+**Manual Setup - Add to your `.pre-commit-config.yaml`:**
 ```yaml
 repos:
+  # Antimoji emoji linting with auto-cleaning
   - repo: https://github.com/jamesainslie/antimoji
-    rev: v0.9.0  # Use latest release
+    rev: v0.9.1  # Use latest release
     hooks:
+      # Strict linting - fails if emojis found in source code
       - id: antimoji-lint
+        files: \.(go|js|ts|jsx|tsx|py|rb|java|c|cpp|h|hpp|rs|php|swift|kt|scala)$
+        exclude: .*_test\.|.*/test/.*|.*/testdata/.*
+        
+      # Auto-clean emojis with backup (recommended)
+      - id: antimoji-clean
+        files: \.(go|js|ts|jsx|tsx|py|rb|java|c|cpp|h|hpp|rs|php|swift|kt|scala)$
+        exclude: .*_test\.|.*/test/.*|.*/testdata/.*
+        
+      # Documentation checking (permissive)
+      - id: antimoji-docs
+        files: \.(md|rst|txt)$
+```
+
+**Local Repository Setup:**
+```yaml
+repos:
+  - repo: local
+    hooks:
+      - id: antimoji-strict
+        name: Antimoji Strict Linter
+        entry: bin/antimoji scan --threshold=0 --ignore-allowlist --quiet
+        language: system
         files: \.(go|js|ts|py|java|c|cpp|rs)$
         exclude: .*_test\.|.*/test/.*
+        pass_filenames: true
+```
+
+### CI/CD Integration
+
+**GitHub Actions Example:**
+```yaml
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  emoji-lint:
+    name: Emoji Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          
+      - name: Install Antimoji
+        run: go install github.com/jamesainslie/antimoji/cmd/antimoji@latest
+        
+      - name: Generate Allowlist
+        run: antimoji generate --type=ci-lint --output=.antimoji.yaml .
+        
+      - name: Lint for Emojis
+        run: antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 --format=json .
+```
+
+**GitLab CI Example:**
+```yaml
+emoji-lint:
+  stage: test
+  image: golang:1.21
+  script:
+    - go install github.com/jamesainslie/antimoji/cmd/antimoji@latest
+    - antimoji generate --type=ci-lint --output=.antimoji.yaml .
+    - antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 .
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+```
+
+**Jenkins Pipeline Example:**
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage('Emoji Lint') {
+            steps {
+                sh 'go install github.com/jamesainslie/antimoji/cmd/antimoji@latest'
+                sh 'antimoji generate --type=ci-lint --output=.antimoji.yaml .'
+                sh 'antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 .'
+            }
+        }
+    }
+}
+```
+
+**Docker Integration:**
+```dockerfile
+# In your Dockerfile for CI
+FROM golang:1.21-alpine AS linter
+RUN go install github.com/jamesainslie/antimoji/cmd/antimoji@latest
+COPY . /app
+WORKDIR /app
+RUN antimoji scan --threshold=0 --ignore-allowlist .
+```
+
+## Real-World Examples
+
+### Self-Linting Project
+
+Antimoji uses itself for emoji linting! Here's how:
+
+**Configuration (`.antimoji.yaml`):**
+```yaml
+version: "0.5.0"
+profiles:
+  ci-lint:
+    # Scan source code and build files
+    include_patterns: ["*.go", "*.js", "*.py", "Makefile", "*.mk"]
+    
+    # Allow legitimate emojis from tests and docs
+    emoji_allowlist: ["😀", "✅", "❌", ":)", ":(", ":smile:"]
+    
+    # Exclude files that legitimately contain emojis
+    file_ignore_list: ["*_test.go", "*.md", "generate.go", "config.go"]
+    
+    # Fail build if emojis found in production code
+    fail_on_found: true
+    max_emoji_threshold: 0
+```
+
+**GitHub Actions Integration:**
+```yaml
+# From .github/workflows/ci.yml
+antimoji-lint:
+  name: Antimoji Lint
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - name: Build antimoji
+      run: make build
+    - name: Run antimoji linter
+      run: |
+        if [ -f ".antimoji.yaml" ]; then
+          ./bin/antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 .
+        else
+          ./bin/antimoji generate --type=ci-lint --output=.antimoji.yaml .
+          ./bin/antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 .
+        fi
+```
+
+**Makefile Integration:**
+```makefile
+# From Makefile
+antimoji-lint: build
+	@echo "Running antimoji linter..."
+	@./bin/antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 .
+
+generate-allowlist: build
+	@echo "Generating antimoji allowlist configuration..."
+	@./bin/antimoji generate --type=ci-lint --output=.antimoji.yaml .
+
+check-all: deps fmt vet lint antimoji-lint security-scan test-coverage-check
+	@echo "All quality checks passed!"
+```
+
+### Enterprise Integration
+
+**Multi-Language Repository:**
+```yaml
+# .antimoji.yaml for polyglot projects
+profiles:
+  strict:
+    include_patterns: 
+      - "*.go"      # Backend
+      - "*.ts"      # Frontend  
+      - "*.py"      # Scripts
+      - "*.java"    # Services
+      - "Makefile"  # Build
+    emoji_allowlist: []  # Zero tolerance
+    fail_on_found: true
+```
+
+**Gradual Adoption:**
+```bash
+# Phase 1: Documentation only
+antimoji generate --type=docs-only --output=.antimoji.yaml .
+
+# Phase 2: Add test files  
+antimoji generate --type=test-only --output=.antimoji.yaml .
+
+# Phase 3: Full source code
+antimoji generate --type=ci-lint --output=.antimoji.yaml .
 ```
 
 ### Large Repository Processing
