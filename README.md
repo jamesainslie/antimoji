@@ -157,10 +157,39 @@ antimoji scan . --format json > emoji-report.json
 ### CI/CD Integration
 ```bash
 # Fail build if emojis found
-antimoji scan . --threshold 0 --format json --quiet
+antimoji scan --threshold=0 --format=json --quiet .
+
+# Use configuration-based linting
+antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 .
+
+# Generate allowlist configuration
+antimoji generate --type=ci-lint --output=.antimoji.yaml .
 
 # Clean with strict policy
-antimoji clean --profile strict --in-place .
+antimoji clean --profile=strict --in-place .
+```
+
+### Pre-commit Integration
+```bash
+# Install pre-commit framework
+make install-pre-commit
+
+# Generate antimoji configuration
+make generate-allowlist
+
+# Test pre-commit hooks
+make test-pre-commit
+```
+
+Add to your `.pre-commit-config.yaml`:
+```yaml
+repos:
+  - repo: https://github.com/jamesainslie/antimoji
+    rev: v0.9.0  # Use latest release
+    hooks:
+      - id: antimoji-lint
+        files: \.(go|js|ts|py|java|c|cpp|rs)$
+        exclude: .*_test\.|.*/test/.*
 ```
 
 ### Large Repository Processing
