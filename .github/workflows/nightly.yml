@@ -46,7 +46,7 @@ jobs:
     - name: Test binary (Windows)
       if: runner.os == 'Windows'
       run: |
-        .\bin\antimoji.exe version
+        & ".\bin\antimoji.exe" version
       shell: pwsh
         
     - name: Test binary (Unix)
