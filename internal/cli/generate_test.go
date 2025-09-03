@@ -54,7 +54,7 @@ func TestAnalyzeEmojiUsage(t *testing.T) {
 		"source.go":      "package main\n\n// Hello world - no emojis",
 		"test_emoji.go":  "package main\n\n// Test with 😀 emoji\nfunc TestSomething() { /* 😃 */ }",
 		"README.md":      "# Project\n\nStatus: ✅ Working\n\nWarning: ⚠️ Be careful",
-		"docs/guide.md":  "# Guide\n\nCelebration: 🎉\nRocket: 🚀",
+		"guide.md":       "# Guide\n\nCelebration: 🎉\nRocket: 🚀",
 		"script.sh":      "#!/bin/bash\necho 'Build complete 🔥'",
 		".github/ci.yml": "name: CI\nsteps:\n  - name: Success\n    run: echo '✅ Done'",
 	}
@@ -102,7 +102,7 @@ func TestAnalyzeEmojiUsage(t *testing.T) {
 		}{
 			{"test_emoji.go", "test"},
 			{"README.md", "documentation"},
-			{"docs/guide.md", "markdown"},
+			{"guide.md", "markdown"},
 			{"script.sh", "other"},
 			{".github/ci.yml", "ci"},
 			{"source.go", "source"},
@@ -262,10 +262,10 @@ func TestRunGenerate(t *testing.T) {
 
 	// Create test files
 	testFiles := map[string]string{
-		"main.go":       "package main\n\nfunc main() {\n\t// No emojis here\n}",
-		"main_test.go":  "package main\n\nfunc TestMain() {\n\t// Test with 😀 emoji\n}",
-		"README.md":     "# Project\n\nStatus: ✅ Working",
-		"docs/guide.md": "# Guide\n\nCelebration: 🎉",
+		"main.go":      "package main\n\nfunc main() {\n\t// No emojis here\n}",
+		"main_test.go": "package main\n\nfunc TestMain() {\n\t// Test with 😀 emoji\n}",
+		"README.md":    "# Project\n\nStatus: ✅ Working",
+		"guide.md":     "# Guide\n\nCelebration: 🎉",
 	}
 
 	for relativePath, content := range testFiles {
@@ -399,7 +399,7 @@ func TestCategorizeFile(t *testing.T) {
 		},
 		{
 			name:         "Documentation markdown",
-			filePath:     "docs/architecture.md",
+			filePath:     "architecture.md",
 			expectedType: "markdown",
 		},
 		{

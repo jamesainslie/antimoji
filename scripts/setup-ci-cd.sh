@@ -121,7 +121,7 @@ if git diff origin/main --quiet >/dev/null 2>&1; then
     echo -e "${GREEN}✓${NC} Code is up to date with remote"
 else
     echo "Pushing code to trigger CI/CD..."
-    
+
     # Try to push, handle conflicts gracefully
     if git push origin main; then
         echo -e "${GREEN}✓${NC} Code pushed successfully"
@@ -168,6 +168,6 @@ echo "Repository: $(gh repo view --json url -q .url)"
 echo "Actions: $(gh repo view --json url -q .url)/actions"
 echo ""
 echo "Documentation:"
-echo "- docs/ci-cd-setup.md"
-echo "- docs/release-process.md"
-echo "- docs/github-setup.md"
+echo "- See project documentation for CI/CD setup"
+echo "- See project documentation for release process"
+echo "- See project documentation for GitHub setup"

@@ -535,7 +535,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- **Documentation**: See [docs/](docs/) directory
+- **Documentation**: See project documentation
 - **Issues**: [GitHub Issues](https://github.com/jamesainslie/antimoji/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/jamesainslie/antimoji/discussions)
 - **Email**: james@ainslies.us
