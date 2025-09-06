@@ -413,7 +413,8 @@ func TestUpdatePreCommitConfig(t *testing.T) {
 			},
 			setup: func() {
 				configPath := filepath.Join(tempDir, ".pre-commit-config.yaml")
-				os.WriteFile(configPath, []byte("existing config"), 0644)
+				err := os.WriteFile(configPath, []byte("existing config"), 0644)
+				require.NoError(t, err)
 			},
 			expectErr: false, // Should not error, just skip
 		},
