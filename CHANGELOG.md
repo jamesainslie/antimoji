@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.7] - 2025-09-06
+
+### Fixed
+- **Token Permissions**: Updated PAT_TOKEN with enhanced permissions including write:packages
+- **GoReleaser Integration**: Should now properly push Homebrew formula updates
+
 ## [v0.9.6] - 2025-09-06
 
 ### Fixed
