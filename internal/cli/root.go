@@ -29,7 +29,7 @@ func NewRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "antimoji",
 		Short: "High-performance emoji detection and removal CLI tool",
-		Long: `Antimoji is a blazing-fast CLI tool for detecting and removing emojis 
+		Long: `Antimoji is a blazing-fast CLI tool for detecting and removing emojis
 from code files, markdown documents, and other text-based artifacts.
 
 Built with Go using functional programming principles, Antimoji provides:
@@ -55,6 +55,7 @@ Built with Go using functional programming principles, Antimoji provides:
 	cmd.AddCommand(NewScanCommand())
 	cmd.AddCommand(NewCleanCommand())
 	cmd.AddCommand(NewGenerateCommand())
+	cmd.AddCommand(NewSetupLintCommand())
 	cmd.AddCommand(NewVersionCommand())
 
 	// Set up configuration
