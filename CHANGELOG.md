@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.6] - 2025-09-06
+
+### Fixed
+- **GoReleaser Homebrew Integration**: Properly configured GoReleaser to handle Homebrew formula updates
+- **Formula Structure**: Added skip_upload: auto and proper commit message template
+- **Branch Specification**: Explicitly set branch: main for Homebrew repository updates
+
+### Improved
+- **Homebrew Testing**: Enhanced formula test to include emoji functionality validation
+- **Documentation**: Added setup-lint command to Homebrew formula caveats
+
 ## [v0.9.5] - 2025-09-06
 
 ### Fixed
