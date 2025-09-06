@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.4] - 2025-09-06
+
+### Added
+- **New `setup-lint` Command**: Comprehensive automated linting configuration setup with three tolerance modes
+  - **Zero-tolerance mode**: Disallows ALL emojis in source code (strictest policy)
+  - **Allow-list mode**: Allows only specified emojis (default: ✅, ❌) with customizable allowlist
+  - **Permissive mode**: Warns about excessive emoji usage but doesn't fail builds
+- **Automated Configuration Generation**: 
+  - Creates `.antimoji.yaml` with mode-specific profiles and settings
+  - Updates `.pre-commit-config.yaml` with antimoji linting hooks
+  - Configures `.golangci.yml` for emoji linting integration
+- **Flexible Setup Options**:
+  - `--allowed-emojis` flag for custom emoji allowlists
+  - `--force` flag to overwrite existing configurations  
+  - `--skip-precommit` flag to skip pre-commit hook installation
+  - `--output-dir` to specify target directory
+- **Smart Default Configurations**: Mode-specific profiles with appropriate thresholds, file patterns, and behaviors
+- **Comprehensive Help Documentation**: Detailed usage examples and configuration guidance
+
+### Fixed
+- **Pre-commit Hook Integration**: Fixed go-vet hook compatibility issues with Go modules
+- **Local Hook Implementation**: Replaced external pre-commit golang hooks with reliable local implementations
+- **Code Formatting**: Resolved trailing whitespace and end-of-file formatting issues across codebase
+
+### Changed
+- **Pre-commit Configuration**: Migrated to local go-fmt, go-vet, and go-mod-tidy hooks for better reliability
+- **CLI Command Structure**: Added setup-lint as a core subcommand alongside scan, clean, and generate
+
+### Technical Details
+- **Comprehensive Test Suite**: Added extensive unit and integration tests for setup-lint functionality
+- **Configuration Management**: Leverages existing config.Config and Profile structures for consistency
+- **Mode-specific Profiles**: Each linting mode generates appropriate emoji detection settings, thresholds, and file filters
+- **Pre-commit Integration**: Seamless integration with existing pre-commit workflow and antimoji auto-cleaning
+
+### Impact
+- **Developer Experience**: One-command setup for emoji linting in any project
+- **CI/CD Integration**: Automated configuration for continuous integration emoji policies  
+- **Flexibility**: Support for different team preferences from strict to permissive emoji usage
+- **Consistency**: Standardized emoji linting configuration across projects and teams
+
 ## [v0.9.3] - 2025-09-06
 
 ### Fixed

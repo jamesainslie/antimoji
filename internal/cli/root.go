@@ -19,7 +19,7 @@ var (
 	dryRun      bool
 
 	// Build information (will be set by main package)
-	buildVersion   = "0.6.0"
+	buildVersion   = "0.9.4"
 	buildTime      = "unknown"
 	buildGitCommit = "unknown"
 )
