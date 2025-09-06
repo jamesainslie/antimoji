@@ -10,11 +10,11 @@ profiles:
     recursive: true
     follow_symlinks: false
     backup_files: false
-    
+
     # Emoji detection - detect all types for comprehensive linting
     unicode_emojis: true
     text_emoticons: true
-    custom_patterns: 
+    custom_patterns:
       - ":smile:"
       - ":frown:"
       - ":thumbs_up:"
@@ -32,53 +32,20 @@ profiles:
       - ":grin:"
       - ":happy:"
       - ":sad:"
-    
-    # Strict allowlist - only emojis actually found in the project
+
+    # Strict allowlist - only emojis actually found in tests
     emoji_allowlist:
       # Text emoticons found in tests
       - ":)"
-      - ":("
-      - ":D"
-      - ":-)"
-      - ":-("
-      - ":-D"
-      - ":-P"
-      - ":-O"
-      - ":-/"
-      - ":-|"
-      - ":-o"
-      - ":-p"
-      - ":/"
-      - ":|"
-      - ":O"
-      - ":P"
-      - ":o"
-      - ":p"
-      - ";)"
-      - ";-)"
-      - "^_^"
-      - "-_-"
-      - "<3"
-      - "</3"
-      
+
       # Custom patterns found in tests
       - ":smile:"
-      - ":frown:"
       - ":thumbs_up:"
-      - ":thumbs_down:"
-      - ":heart:"
-      - ":fire:"
-      - ":rocket:"
-      - ":star:"
-      - ":tada:"
-      - ":clap:"
-      - ":wave:"
-      - ":grin:"
-      - ":happy:"
-      - ":sad:"
-      
-      # Unicode emojis found in project (using Unicode escape sequences for clarity)
-      - "😀"  # \U0001F600 - Grinning face (tests)
+      - ":warning:"
+      - ":frown:"
+
+      # Unicode emojis found in test files only
+      - "😀"  # \U0001F600 - Grinning face (most common in tests)
       - "😁"  # \U0001F601 - Beaming face with smiling eyes (tests)
       - "😂"  # \U0001F602 - Face with tears of joy (tests)
       - "😃"  # \U0001F603 - Grinning face with big eyes (tests)
@@ -86,62 +53,61 @@ profiles:
       - "😅"  # \U0001F605 - Grinning face with sweat (tests)
       - "😆"  # \U0001F606 - Grinning squinting face (tests)
       - "🤣"  # \U0001F923 - Rolling on the floor laughing (tests)
+      - "🌍"  # \U0001F30D - Earth globe Europe-Africa (tests)
+      - "🚀"  # \U0001F680 - Rocket (tests)
+      - "🎉"  # \U0001F389 - Party popper (tests)
+      - "🔥"  # \U0001F525 - Fire (tests)
+      - "✅"  # \U00002705 - Check mark (tests)
+      - "❌"  # \U0000274C - Cross mark (tests)
+      - "⚠️"  # \U000026A0\U0000FE0F - Warning sign (tests)
       - "👍"  # \U0001F44D - Thumbs up (tests)
       - "👎"  # \U0001F44E - Thumbs down (tests)
-      - "👍🏽" # \U0001F44D\U0001F3FD - Thumbs up with skin tone (tests)
-      - "🎉"  # \U0001F389 - Party popper (tests, CI)
-      - "🔥"  # \U0001F525 - Fire (allowlist defaults, CI)
-      - "🚀"  # \U0001F680 - Rocket (CI workflows, release messages)
-      - "⭐"  # \U0002B50 - Star (allowlist defaults)
-      - "🐛"  # \U0001F41B - Bug (allowlist defaults)
-      - "✨"  # \U0002728 - Sparkles (allowlist defaults)
-      - "📝"  # \U0001F4DD - Memo (allowlist defaults)
-      - "📚"  # \U0001F4DA - Books (allowlist defaults)
-      - "📖"  # \U0001F4D6 - Open book (allowlist defaults)
-      - "🔗"  # \U0001F517 - Link (allowlist defaults)
-      - "📦"  # \U0001F4E6 - Package (release workflows)
-      - "🐳"  # \U0001F433 - Whale (release workflows - Docker)
-      - "🍺"  # \U0001F37A - Beer mug (release workflows - Homebrew)
-      
-      # Status and documentation emojis
-      - "✅"  # Check mark - used in CI workflows and documentation
-      - "❌"  # Cross mark - used in CI workflows and tests
-      - "⚠️"  # Warning - used in CI workflows and Makefile
-      - "✓"   # Check mark (simple)
-      - "✗"   # Cross mark (simple)
-      - "⚠"   # Warning (simple)
-      - "❤️"  # Red heart - used in tests
-      
+
+      # Additional emojis from emoji-heavy test content
+      - "🎊"  # \U0001F38A - Confetti ball (tests)
+      - "🎈"  # \U0001F388 - Balloon (tests)
+      - "🎁"  # \U0001F381 - Gift (tests)
+      - "🎂"  # \U0001F382 - Birthday cake (tests)
+      - "🍰"  # \U0001F370 - Shortcake (tests)
+      - "🧁"  # \U0001F9C1 - Cupcake (tests)
+      - "🍭"  # \U0001F36D - Lollipop (tests)
+      - "🍬"  # \U0001F36C - Candy (tests)
+      - "🍫"  # \U0001F36B - Chocolate bar (tests)
+      - "🍩"  # \U0001F369 - Doughnut (tests)
+      - "🍪"  # \U0001F36A - Cookie (tests)
+      - "🍯"  # \U0001F36F - Honey pot (tests)
+      - "🍮"  # \U0001F36E - Custard (tests)
+
     # File exclusions - ignore files that legitimately contain emojis
     file_ignore_list:
       # Test files and test data (use simple patterns that match basename)
       - "*_test.go"
       - "test_*.go"
       - "*.test.go"
-      
+
       # Documentation files
       - "README.md"
       - "CHANGELOG.md"
       - "RELEASES.md"
       - "AGENTS.md"
       - "*.md"
-      
+
       # CI/CD and script files
       - "*.yml"
       - "*.yaml"
       - "*.sh"
       - "*.bash"
-      
+
       # Generated, vendored, and build files
       - "*.generated.*"
       - "coverage.html"
       - ".antimoji-*.yaml"
       - "antimoji"
-      
+
       # Configuration and build files that may contain emojis
       - ".goreleaser.yaml"
       - "Dockerfile"
-      
+
       # Files that contain emojis in help text/examples/defaults
       - "generate.go"  # Contains emojis in help text and examples
       - "config.go"    # Contains default emoji allowlists
@@ -149,7 +115,7 @@ profiles:
       - "detector.go"  # Contains emoji detection patterns
       - "root.go"      # Contains emojis in CLI help text
       - "detection.go" # Contains emoji examples in comments
-      
+
       # Binary and image files
       - "*.png"
       - "*.jpg"
@@ -159,7 +125,7 @@ profiles:
       - "*.ico"
       - "*.exe"
       - "*.bin"
-      
+
     # Directory exclusions
     directory_ignore_list:
       - ".git"
@@ -179,13 +145,13 @@ profiles:
       - "mocks"
       - ".github"
       - "docs"
-    
+
     # Replacement behavior
     replacement: ""
     preserve_whitespace: true
-    
+
     # File filters - scan source code files and build files
-    include_patterns: 
+    include_patterns:
       - "*.go"
       - "*.js"
       - "*.ts"
@@ -206,7 +172,7 @@ profiles:
       - "Makefile"
       - "makefile"
       - "*.mk"
-    
+
     exclude_patterns:
       - "vendor/*"
       - "node_modules/*"
@@ -220,17 +186,17 @@ profiles:
       - "**/fixtures/**/*"  # Exclude fixtures
       - "**/mocks/**/*"     # Exclude mocks
       - "internal/cli/generate.go"  # Contains emojis in help text and examples
-    
+
     # CI/CD behavior - fail build if emojis found in production code
     fail_on_found: true
     max_emoji_threshold: 0
     exit_code_on_found: 1
-    
+
     # Performance settings
     max_workers: 0  # Auto-detect
     buffer_size: 65536
     max_file_size: 104857600  # 100MB
-    
+
     # Output settings for CI
     output_format: "table"
     show_progress: false
@@ -242,19 +208,19 @@ profiles:
     recursive: true
     follow_symlinks: false
     backup_files: false
-    
+
     # Emoji detection
     unicode_emojis: true
     text_emoticons: true
-    custom_patterns: 
+    custom_patterns:
       - ":smile:"
       - ":frown:"
       - ":thumbs_up:"
       - ":heart:"
-    
+
     # Very strict - no emojis allowed in staged source files
     emoji_allowlist: []
-    
+
     # Only ignore absolute necessities for pre-commit
     file_ignore_list:
       - "README.md"
@@ -264,7 +230,7 @@ profiles:
       - "vendor/**/*"
       - "dist/**/*"
       - "bin/**/*"
-    
+
     directory_ignore_list:
       - ".git"
       - "vendor"
@@ -272,13 +238,13 @@ profiles:
       - "bin"
       - ".github"
       - "docs"
-    
+
     # Replacement behavior
     replacement: ""
     preserve_whitespace: true
-    
+
     # File filters - scan all source files for pre-commit
-    include_patterns: 
+    include_patterns:
       - "*.go"
       - "*.js"
       - "*.ts"
@@ -296,7 +262,7 @@ profiles:
       - "*.swift"
       - "*.kt"
       - "*.scala"
-    
+
     exclude_patterns:
       - "vendor/*"
       - "node_modules/*"
@@ -304,17 +270,17 @@ profiles:
       - "dist/*"
       - "build/*"
       - "bin/*"
-    
+
     # Pre-commit behavior - always fail if emojis found
     fail_on_found: true
     max_emoji_threshold: 0
     exit_code_on_found: 1
-    
+
     # Performance settings
     max_workers: 0
     buffer_size: 32768
     max_file_size: 52428800  # 50MB
-    
+
     # Output settings for pre-commit
     output_format: "table"
     show_progress: false
