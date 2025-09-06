@@ -4,5 +4,6 @@
     "titleBar.activeForeground": "#ffffff",
     "titleBar.inactiveBackground": "#1F3E1B",
     "titleBar.inactiveForeground": "#cccccc"
-  }
+  },
+  "makefile.configureOnOpen": false
 }
