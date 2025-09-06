@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -178,6 +179,164 @@ func TestIsTextFile(t *testing.T) {
 		result := IsTextFile(filePath)
 		assert.False(t, result)
 	})
+}
+
+// TestIsTextContentEmojiEdgeCases tests the specific bug fix for emoji detection
+func TestIsTextContentEmojiEdgeCases(t *testing.T) {
+	t.Run("emoji UTF-8 handling", func(t *testing.T) {
+		testCases := []struct {
+			name     string
+			content  string
+			expected bool
+			reason   string
+		}{
+			{
+				name:     "single emoji",
+				content:  "😀",
+				expected: true,
+				reason:   "Single emoji should be detected as text",
+			},
+			{
+				name:     "multiple emojis",
+				content:  "😀😃😄😁😆",
+				expected: true,
+				reason:   "Multiple emojis should be detected as text",
+			},
+			{
+				name:     "emoji with text",
+				content:  "Hello 😀 World 🌍 Test 🚀",
+				expected: true,
+				reason:   "Mixed emoji and text should be detected as text",
+			},
+			{
+				name:     "emoji-heavy content",
+				content:  "🎉🎊🎈🎁🎂🍰🧁🍭🍬🍫🍩🍪🍯🍮🍭🍬🍫🍩🍪",
+				expected: true,
+				reason:   "Content with many emojis should still be text",
+			},
+			{
+				name:     "shell script with emojis",
+				content:  "#!/bin/bash\necho \"Starting deployment 🚀\"\necho \"Success! 🎉\"",
+				expected: true,
+				reason:   "Shell scripts with emojis should be detected as text",
+			},
+			{
+				name:     "json with emojis",
+				content:  `{"message": "Hello 😀", "status": "success 🎉"}`,
+				expected: true,
+				reason:   "JSON with emojis should be detected as text",
+			},
+			{
+				name:     "markdown with emojis",
+				content:  "# Project Title 🚀\n\n## Features\n- Feature 1 ✅\n- Feature 2 🔥",
+				expected: true,
+				reason:   "Markdown with emojis should be detected as text",
+			},
+			{
+				name:     "unicode characters",
+				content:  "Héllo Wørld ñoñó 中文 العربية русский",
+				expected: true,
+				reason:   "Unicode text should be detected as text",
+			},
+			{
+				name:     "mixed unicode and emojis",
+				content:  "Héllo 😀 Wørld 🌍 中文 🚀 العربية 🎉",
+				expected: true,
+				reason:   "Mixed Unicode and emojis should be text",
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				result := isTextContent([]byte(tc.content))
+				assert.Equal(t, tc.expected, result, tc.reason)
+
+				// Also test the file-level function
+				tmpDir := t.TempDir()
+				filePath := filepath.Join(tmpDir, tc.name+".txt")
+				err := os.WriteFile(filePath, []byte(tc.content), 0644)
+				assert.NoError(t, err)
+
+				fileResult := IsTextFile(filePath)
+				assert.Equal(t, tc.expected, fileResult, tc.reason+" (file-level test)")
+			})
+		}
+	})
+
+	t.Run("binary content detection", func(t *testing.T) {
+		testCases := []struct {
+			name     string
+			content  []byte
+			expected bool
+			reason   string
+		}{
+			{
+				name:     "null bytes",
+				content:  []byte("Hello\x00World"),
+				expected: false,
+				reason:   "Content with null bytes should be binary",
+			},
+			{
+				name:     "invalid utf8",
+				content:  []byte{0xFF, 0xFE, 0xFD},
+				expected: false,
+				reason:   "Invalid UTF-8 should be binary",
+			},
+			{
+				name:     "control characters",
+				content:  []byte("Hello\x01\x02\x03\x04\x05\x06\x07World"),
+				expected: false,
+				reason:   "Too many control characters should be binary",
+			},
+			{
+				name:     "valid control characters",
+				content:  []byte("Hello\tWorld\nNew\rLine"),
+				expected: true,
+				reason:   "Valid control chars (tab, newline, CR) should be text",
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				result := isTextContent(tc.content)
+				assert.Equal(t, tc.expected, result, tc.reason)
+			})
+		}
+	})
+}
+
+// TestIsTextContentPerformance benchmarks the performance of the new UTF-8 aware function
+func TestIsTextContentPerformance(t *testing.T) {
+	// Create test content with various emoji densities
+	testCases := []struct {
+		name    string
+		content string
+	}{
+		{"plain_text", strings.Repeat("Hello World ", 100)},
+		{"emoji_light", strings.Repeat("Hello 😀 World ", 100)},
+		{"emoji_heavy", strings.Repeat("😀😃😄😁😆😅😂🤣", 100)},
+		{"unicode_mixed", strings.Repeat("Héllo 😀 Wørld 🌍 中文 🚀 ", 100)},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			content := []byte(tc.content)
+
+			// Ensure it works correctly first
+			result := isTextContent(content)
+			assert.True(t, result, "Content should be detected as text")
+
+			// Simple performance check - should complete quickly
+			start := time.Now()
+			for i := 0; i < 100; i++ {
+				isTextContent(content)
+			}
+			duration := time.Since(start)
+
+			// Should process 100 iterations in less than 100ms for reasonable content sizes
+			assert.Less(t, duration, 100*time.Millisecond, "Performance regression detected")
+		})
+	}
 }
 
 func TestGetFileInfo(t *testing.T) {

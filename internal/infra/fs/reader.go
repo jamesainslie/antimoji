@@ -101,6 +101,7 @@ func GetFileInfo(filepath string) types.Result[types.FileInfo] {
 }
 
 // isTextContent determines if the given byte slice contains text content.
+// It uses UTF-8 aware analysis to properly handle emojis and other Unicode characters.
 func isTextContent(data []byte) bool {
 	if len(data) == 0 {
 		return true
@@ -116,24 +117,29 @@ func isTextContent(data []byte) bool {
 		return false
 	}
 
-	// Count non-printable characters
+	// Count non-printable runes (not bytes) to properly handle UTF-8
 	nonPrintable := 0
-	total := 0
+	totalRunes := 0
 
-	for _, b := range data {
-		total++
-		if b < 32 && b != '\t' && b != '\n' && b != '\r' {
+	// Process the data rune by rune instead of byte by byte
+	for len(data) > 0 {
+		r, size := utf8.DecodeRune(data)
+		if r == utf8.RuneError && size == 1 {
+			// Invalid UTF-8 sequence (shouldn't happen since we validated above)
 			nonPrintable++
-		} else if b > 126 {
-			// Allow UTF-8 sequences, but count high bytes
-			if !utf8.RuneStart(b) {
-				nonPrintable++
-			}
+		} else if r < 32 && r != '\t' && r != '\n' && r != '\r' {
+			// Control characters (except tab, newline, carriage return)
+			nonPrintable++
 		}
+		// Note: We don't count high Unicode runes (including emojis) as non-printable
+		// They are valid text content even if they're above ASCII range
+
+		totalRunes++
+		data = data[size:]
 	}
 
-	// If more than 30% of bytes are non-printable, consider it binary
-	if total > 0 && float64(nonPrintable)/float64(total) > 0.30 {
+	// If more than 30% of runes are non-printable control characters, consider it binary
+	if totalRunes > 0 && float64(nonPrintable)/float64(totalRunes) > 0.30 {
 		return false
 	}
 
