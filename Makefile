@@ -1,7 +1,7 @@
 # Antimoji Makefile
 # High-performance emoji detection and removal CLI tool
 
-.PHONY: help build test test-coverage lint security-scan clean install deps check-all release
+.PHONY: help build test test-coverage benchmark lint security-scan clean install deps check-all release
 
 # Default target
 help: ## Show this help message
@@ -64,6 +64,11 @@ test-coverage-check: ## Check if test coverage meets minimum requirement (85%)
 	else \
 		echo "Test coverage $${COVERAGE}% meets requirement"; \
 	fi
+
+benchmark: ## Run benchmark tests
+	@echo "Running benchmark tests..."
+	@go test -bench=. -benchmem -run=^$$ ./... | tee benchmark_results.txt
+	@echo "Benchmark results saved to benchmark_results.txt"
 
 # Quality checks
 lint: ## Run linter
