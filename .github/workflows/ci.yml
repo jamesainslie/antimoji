@@ -18,35 +18,35 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
-      
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
-        
+
     - name: Download dependencies
       run: go mod download
-      
+
     - name: Verify dependencies
       run: go mod verify
-      
+
     - name: Run tests
       run: make test-coverage
-      
+
     - name: Check test coverage
       run: make test-coverage-check
-      
+
     - name: Generate coverage badge
       run: |
         # Calculate coverage percentage
         COVERAGE=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | sed 's/%//')
         echo "Coverage: ${COVERAGE}%"
-        
+
         # Generate coverage badge SVG
         mkdir -p badges
         if (( $(echo "$COVERAGE >= 90" | bc -l) )); then
@@ -60,24 +60,24 @@ jobs:
         else
           COLOR="red"
         fi
-        
+
         # Create badge URL and download it
         BADGE_URL="https://img.shields.io/badge/coverage-${COVERAGE}%25-${COLOR}?logo=go"
         curl -s "$BADGE_URL" > badges/coverage.svg
         echo "Generated coverage badge: ${COVERAGE}% (${COLOR})"
         echo "Badge URL: ${BADGE_URL}"
-        
+
         # Save badge info for manual update
         echo "COVERAGE=${COVERAGE}" >> $GITHUB_ENV
         echo "BADGE_URL=${BADGE_URL}" >> $GITHUB_ENV
         echo "BADGE_COLOR=${COLOR}" >> $GITHUB_ENV
-        
+
     - name: Upload coverage badge
       uses: actions/upload-artifact@v4
       with:
         name: coverage-badge
         path: badges/coverage.svg
-        
+
     - name: Coverage summary
       run: |
         echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
@@ -90,7 +90,7 @@ jobs:
         echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
         echo "./scripts/update-coverage-badge.sh" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        
+
     - name: Verify coverage threshold
       run: |
         COVERAGE=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | sed 's/%//')
@@ -105,17 +105,17 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
-      
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
-        
+
     - name: Run golangci-lint
       uses: golangci/golangci-lint-action@v7
       with:
@@ -125,20 +125,20 @@ jobs:
   antimoji-lint:
     name: Antimoji Lint
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
-      
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
-        
+
     - name: Build antimoji
       run: make build
-      
+
     - name: Run antimoji linter
       run: |
         echo "Running antimoji on its own codebase..."
@@ -150,7 +150,7 @@ jobs:
           ./bin/antimoji generate --type=ci-lint --output=.antimoji-generated.yaml .
           ./bin/antimoji scan --config=.antimoji-generated.yaml --profile=ci-lint --threshold=0 --format=table .
         fi
-        
+
     - name: Upload antimoji results
       if: always()
       uses: actions/upload-artifact@v4
@@ -164,17 +164,17 @@ jobs:
   security:
     name: Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
-      
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
-        
+
     - name: Run gosec Security Scanner
       run: |
         # Use a working version of gosec
@@ -186,20 +186,20 @@ jobs:
     name: Benchmark
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
-      
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
-        
+
     - name: Run benchmarks
       run: make benchmark
-      
+
     - name: Upload benchmark results
       uses: actions/upload-artifact@v4
       with:
@@ -217,26 +217,26 @@ jobs:
         exclude:
           - goos: windows
             goarch: arm64
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
-        
+
     - name: Get build info
       id: build_info
       run: |
         echo "version=$(git describe --tags --always --dirty 2>/dev/null || echo 'dev')" >> $GITHUB_OUTPUT
         echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
         echo "git_commit=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-        
+
     - name: Build binary
       env:
         GOOS: ${{ matrix.goos }}
@@ -247,35 +247,35 @@ jobs:
         if [ "${{ matrix.goos }}" = "windows" ]; then
           BINARY_NAME="${BINARY_NAME}.exe"
         fi
-        
+
         LDFLAGS="-s -w"
         LDFLAGS="${LDFLAGS} -X main.version=${{ steps.build_info.outputs.version }}"
         LDFLAGS="${LDFLAGS} -X main.buildTime=${{ steps.build_info.outputs.build_time }}"
         LDFLAGS="${LDFLAGS} -X main.gitCommit=${{ steps.build_info.outputs.git_commit }}"
-        
+
         go build -ldflags="${LDFLAGS}" -o "dist/${BINARY_NAME}" ./cmd/antimoji
-        
+
     - name: Test binary (Unix)
       if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
       run: |
         chmod +x dist/antimoji
         ./dist/antimoji version
-        
+
     - name: Test binary (Windows)
       if: matrix.goos == 'windows'
       run: |
         wine dist/antimoji.exe version || echo "Wine not available for Windows testing"
-        
+
     - name: Create archive
       run: |
         ARCHIVE_NAME="antimoji_${{ steps.build_info.outputs.version }}_${{ matrix.goos }}_${{ matrix.goarch }}"
-        
+
         if [ "${{ matrix.goos }}" = "windows" ]; then
           zip -j "${ARCHIVE_NAME}.zip" dist/antimoji.exe README.md LICENSE CHANGELOG.md
         else
           tar -czf "${ARCHIVE_NAME}.tar.gz" -C dist antimoji -C .. README.md LICENSE CHANGELOG.md
         fi
-        
+
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -292,13 +292,13 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        
+
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
         path: artifacts/
-        
+
     - name: Test binaries
       shell: bash
       run: |
@@ -310,7 +310,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, lint, antimoji-lint, security, build]
     if: always()
-    
+
     steps:
     - name: Check job results
       run: |
@@ -318,28 +318,28 @@ jobs:
           echo "❌ Tests failed"
           exit 1
         fi
-        
+
         if [[ "${{ needs.lint.result }}" != "success" ]]; then
           echo "❌ Linting failed"
           exit 1
         fi
-        
+
         if [[ "${{ needs.antimoji-lint.result }}" != "success" ]]; then
           echo "❌ Antimoji linting failed"
           exit 1
         fi
-        
+
         if [[ "${{ needs.security.result }}" == "failure" ]]; then
           echo "⚠️ Security scan had issues (non-critical)"
         fi
-        
+
         if [[ "${{ needs.build.result }}" != "success" ]]; then
           echo "❌ Build failed"
           exit 1
         fi
-        
+
         echo "✅ All quality checks and builds passed!"
-        
+
     - name: Generate build summary
       run: |
         echo "## Build Summary" >> $GITHUB_STEP_SUMMARY

@@ -20,7 +20,7 @@ profiles:
     recursive: true
     unicode_emojis: true
     text_emoticons: false
-    custom_patterns: 
+    custom_patterns:
       - ":smile:"
       - ":frown:"
     emoji_allowlist:

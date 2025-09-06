@@ -15,12 +15,31 @@ repos:
       - id: check-merge-conflict
 
   # Go-specific hooks
-  - repo: https://github.com/dnephin/pre-commit-golang
-    rev: v0.5.1
+  - repo: local
     hooks:
       - id: go-fmt
+        name: go fmt
+        description: Runs gofmt, requires golang
+        entry: gofmt
+        language: system
+        args: [-w]
+        types: [go]
       - id: go-vet
+        name: go vet
+        description: Runs go vet, requires golang
+        entry: go
+        language: system
+        args: [vet, ./...]
+        types: [go]
+        pass_filenames: false
       - id: go-mod-tidy
+        name: go mod tidy
+        description: Runs go mod tidy, requires golang
+        entry: go
+        language: system
+        args: [mod, tidy]
+        types: [go]
+        pass_filenames: false
 
   # Local antimoji hooks (using the built binary)
   - repo: local

@@ -18,26 +18,26 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         go-version: ['1.21', '1.22', '1.23']
       fail-fast: false
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
-      
+
     - name: Set up Go ${{ matrix.go-version }}
       uses: actions/setup-go@v4
       with:
         go-version: ${{ matrix.go-version }}
         cache: true
-        
+
     - name: Run comprehensive tests
       run: |
         go mod download
         go test ./... -race -count=3 -timeout=10m
-        
+
     - name: Run benchmarks
       run: |
         go test ./... -bench=. -benchmem -run=^$ -timeout=15m
-        
+
     - name: Build and test binary
       run: |
         if [ "${{ runner.os }}" = "Windows" ]; then
@@ -46,13 +46,13 @@ jobs:
           make build
         fi
       shell: bash
-        
+
     - name: Test binary (Windows)
       if: runner.os == 'Windows'
       run: |
         .\bin\antimoji.exe version
       shell: pwsh
-        
+
     - name: Test binary (Unix)
       if: runner.os != 'Windows'
       run: |
@@ -62,40 +62,40 @@ jobs:
   nightly-performance:
     name: Nightly Performance Regression
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
-      
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
-        
+
     - name: Run performance tests
       run: |
         echo "## Nightly Performance Report" >> $GITHUB_STEP_SUMMARY
         echo "Date: $(date)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        
+
         # Run benchmarks and capture output
         go test ./internal/core/detector -bench=BenchmarkDetectEmojis -benchmem > bench_detector.txt
         go test ./internal/core/processor -bench=BenchmarkProcessFile -benchmem > bench_processor.txt
         go test ./internal/infra/concurrency -bench=BenchmarkWorkerPool -benchmem > bench_concurrency.txt
-        
+
         echo "### Emoji Detection Performance" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         cat bench_detector.txt >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        
+
         echo "### File Processing Performance" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         cat bench_processor.txt >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        
+
         echo "### Concurrency Performance" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         cat bench_concurrency.txt >> $GITHUB_STEP_SUMMARY
@@ -104,17 +104,17 @@ jobs:
   nightly-security:
     name: Nightly Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
-      
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
-        
+
     - name: Run security scan (informational)
       run: |
         echo "## Nightly Security Report" >> $GITHUB_STEP_SUMMARY
@@ -129,20 +129,20 @@ jobs:
   nightly-integration:
     name: Nightly Integration Test
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
-      
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
-        
+
     - name: Build binary
       run: make build
-      
+
     - name: Create test repository
       run: |
         # Create a test repository with various file types
@@ -151,35 +151,35 @@ jobs:
         git init
         git config user.name "Test User"
         git config user.email "test@example.com"
-        
+
         # Create files with emojis
         echo "package main // Hello 😀 world" > main.go
         echo "# README 🚀" > README.md
         echo "Status: ✅ done" > status.txt
-        
+
         git add .
         git commit -m "Initial commit with emojis 🎉"
-        
+
     - name: Test CLI on real repository
       run: |
         cd test-repo
-        
+
         echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        
+
         # Test scan
         echo "### Scan Results" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         ../bin/antimoji scan . >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        
+
         # Test clean with dry-run
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Clean Preview" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         ../bin/antimoji clean --dry-run . >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        
+
         # Test performance
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Performance Test" >> $GITHUB_STEP_SUMMARY
@@ -192,7 +192,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [nightly-test, nightly-performance, nightly-security, nightly-integration]
     if: failure()
-    
+
     steps:
     - name: Generate failure report
       run: |
@@ -211,7 +211,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [nightly-test, nightly-performance, nightly-security, nightly-integration]
     if: success()
-    
+
     steps:
     - name: Generate success report
       run: |
