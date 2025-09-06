@@ -164,8 +164,11 @@ func TestBinaryDetectionLogic(t *testing.T) {
 				fakeBinary := filepath.Join(tempDir, "antimoji")
 				err := os.WriteFile(fakeBinary, []byte("#!/bin/bash\necho fake"), 0755)
 				require.NoError(t, err)
-				os.Setenv("PATH", tempDir+":"+originalPath)
-				return func() { os.Setenv("PATH", originalPath) }
+				err = os.Setenv("PATH", tempDir+":"+originalPath)
+				require.NoError(t, err)
+				return func() {
+					_ = os.Setenv("PATH", originalPath) // Ignore error in cleanup
+				}
 			},
 			expectedBinary: "antimoji",
 			description:    "Should prefer globally installed antimoji",
@@ -175,15 +178,16 @@ func TestBinaryDetectionLogic(t *testing.T) {
 			setupFunc: func() func() {
 				// Remove antimoji from PATH and create Makefile
 				originalPath := os.Getenv("PATH")
-				os.Setenv("PATH", "/usr/bin:/bin") // Minimal PATH without antimoji
+				err := os.Setenv("PATH", "/usr/bin:/bin") // Minimal PATH without antimoji
+				require.NoError(t, err)
 
 				// Create Makefile in current directory
-				err := os.WriteFile("Makefile", []byte("build:\n\tgo build -o bin/antimoji ./cmd/antimoji"), 0644)
+				err = os.WriteFile("Makefile", []byte("build:\n\tgo build -o bin/antimoji ./cmd/antimoji"), 0644)
 				require.NoError(t, err)
 
 				return func() {
-					os.Setenv("PATH", originalPath)
-					os.Remove("Makefile")
+					_ = os.Setenv("PATH", originalPath) // Ignore error in cleanup
+					_ = os.Remove("Makefile")           // Ignore error in cleanup
 				}
 			},
 			expectedBinary: "bin/antimoji",
@@ -194,10 +198,13 @@ func TestBinaryDetectionLogic(t *testing.T) {
 			setupFunc: func() func() {
 				// Remove antimoji from PATH and ensure no Makefile
 				originalPath := os.Getenv("PATH")
-				os.Setenv("PATH", "/usr/bin:/bin") // Minimal PATH without antimoji
-				os.Remove("Makefile")              // Ensure no Makefile
+				err := os.Setenv("PATH", "/usr/bin:/bin") // Minimal PATH without antimoji
+				require.NoError(t, err)
+				_ = os.Remove("Makefile") // Ensure no Makefile (ignore error if not exists)
 
-				return func() { os.Setenv("PATH", originalPath) }
+				return func() {
+					_ = os.Setenv("PATH", originalPath) // Ignore error in cleanup
+				}
 			},
 			expectedBinary: "antimoji",
 			description:    "Should default to global antimoji even if not found",
@@ -345,8 +352,11 @@ func TestBuildHookConditionalInclusion(t *testing.T) {
 				fakeBinary := filepath.Join(tempDir, "antimoji")
 				err := os.WriteFile(fakeBinary, []byte("#!/bin/bash\necho fake"), 0755)
 				require.NoError(t, err)
-				os.Setenv("PATH", tempDir+":"+originalPath)
-				return func() { os.Setenv("PATH", originalPath) }
+				err = os.Setenv("PATH", tempDir+":"+originalPath)
+				require.NoError(t, err)
+				return func() {
+					_ = os.Setenv("PATH", originalPath) // Ignore error in cleanup
+				}
 			},
 			expectBuildHook: false,
 			description:     "Should not include build hook when using global antimoji",
@@ -356,15 +366,16 @@ func TestBuildHookConditionalInclusion(t *testing.T) {
 			setupFunc: func() func() {
 				// Remove antimoji from PATH and create Makefile
 				originalPath := os.Getenv("PATH")
-				os.Setenv("PATH", "/usr/bin:/bin") // Minimal PATH without antimoji
+				err := os.Setenv("PATH", "/usr/bin:/bin") // Minimal PATH without antimoji
+				require.NoError(t, err)
 
 				// Create Makefile in current directory
-				err := os.WriteFile("Makefile", []byte("build:\n\tgo build -o bin/antimoji ./cmd/antimoji"), 0644)
+				err = os.WriteFile("Makefile", []byte("build:\n\tgo build -o bin/antimoji ./cmd/antimoji"), 0644)
 				require.NoError(t, err)
 
 				return func() {
-					os.Setenv("PATH", originalPath)
-					os.Remove("Makefile")
+					_ = os.Setenv("PATH", originalPath) // Ignore error in cleanup
+					_ = os.Remove("Makefile")           // Ignore error in cleanup
 				}
 			},
 			expectBuildHook: true,
