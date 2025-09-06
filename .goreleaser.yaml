@@ -145,9 +145,13 @@ brews:
       owner: jamesainslie
       name: homebrew-antimoji
       token: "{{ .Env.PAT_TOKEN }}"
+      branch: main
     homepage: https://github.com/jamesainslie/antimoji
     description: High-performance emoji detection and removal CLI tool
     license: MIT
+
+    # Skip existing releases to avoid conflicts
+    skip_upload: auto
 
     # Custom install script to handle tarball extraction
     install: |
@@ -173,6 +177,14 @@ brews:
         antimoji setup-lint --mode=zero-tolerance  # Setup automated linting
 
       Documentation: https://github.com/jamesainslie/antimoji
+
+    # Commit message template
+    commit_msg_template: "feat: update {{ .ProjectName }} to {{ .Tag }}
+
+    - Update version to {{ .Version }}
+    - Update download URLs for {{ .Tag }} release
+    - Update SHA256 checksums for all platforms
+    - Automated update from GoReleaser"
 
 # Docker images are built separately in workflow with multi-stage Dockerfile
 # This avoids conflicts and ensures proper binary compilation
