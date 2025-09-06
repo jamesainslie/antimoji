@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.5] - 2025-09-06
+
+### Fixed
+- **Homebrew Integration**: Fixed GoReleaser Homebrew tap integration with proper PAT token
+- **Release Workflow**: Streamlined workflow to use GoReleaser for all distribution channels
+- **Docker Build**: Resolved all Docker build issues with proper multi-stage build
+
+### Changed
+- **Distribution**: Unified distribution through GoReleaser for consistency
+- **Homebrew Updates**: Now handled automatically by GoReleaser with proper permissions
+
 ## [v0.9.4] - 2025-09-06
 
 ### Added
