@@ -136,7 +136,7 @@ release:
 
     ---
 
-    Built with Go {{ if .Env.GOVERSION }}{{ .Env.GOVERSION }}{{ else }}1.21+{{ end }}
+    Built with Go 1.21+
 
 # Homebrew tap (for macOS) - keeping brews for now until migration
 brews:
