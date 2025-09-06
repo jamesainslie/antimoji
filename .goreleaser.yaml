@@ -138,12 +138,13 @@ release:
 
     Built with Go 1.21+
 
-# Homebrew tap (for macOS) - using proper repository name
+# Homebrew tap (for macOS) - using PAT token for proper permissions
 brews:
   - name: antimoji
     repository:
       owner: jamesainslie
       name: homebrew-antimoji
+      token: "{{ .Env.PAT_TOKEN }}"
     homepage: https://github.com/jamesainslie/antimoji
     description: High-performance emoji detection and removal CLI tool
     license: MIT
