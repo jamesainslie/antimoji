@@ -145,14 +145,34 @@ brews:
       owner: jamesainslie
       name: homebrew-antimoji
       token: "{{ .Env.PAT_TOKEN }}"
-    folder: Formula
     homepage: https://github.com/jamesainslie/antimoji
     description: High-performance emoji detection and removal CLI tool
     license: MIT
+
+    # Custom install script to handle tarball extraction
     install: |
       bin.install "antimoji"
+
+    # Test that includes basic functionality
     test: |
       system "#{bin}/antimoji", "version"
+
+      # Test basic functionality
+      (testpath/"test.txt").write("Hello world! 😀")
+      output = shell_output("#{bin}/antimoji scan #{testpath}/test.txt")
+      assert_match "1", output
+
+    # Custom caveats with setup-lint documentation
+    caveats: |
+      Antimoji is a high-performance emoji detection and removal tool.
+
+      Basic usage:
+        antimoji scan .                    # Scan for emojis
+        antimoji clean --backup .          # Remove emojis with backup
+        antimoji generate --type=ci-lint . # Generate allowlist config
+        antimoji setup-lint --mode=zero-tolerance  # Setup automated linting
+
+      Documentation: https://github.com/jamesainslie/antimoji
 
 # Docker images are built separately in workflow with multi-stage Dockerfile
 # This avoids conflicts and ensures proper binary compilation
