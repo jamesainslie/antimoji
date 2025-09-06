@@ -54,14 +54,14 @@ BADGE_URL="https://img.shields.io/badge/coverage-${COVERAGE}%25-${COLOR}?logo=go
 if [ -f "README.md" ]; then
     # Create a backup
     cp README.md README.md.backup
-    
+
     # Update the coverage badge line
     sed -i.tmp "s|https://img.shields.io/github/commit-activity/m/jamesainslie/antimoji[^\"]*|${BADGE_URL}|g" README.md
     sed -i.tmp 's/alt="Commit Activity"/alt="Test Coverage"/g' README.md
-    
+
     # Clean up temp file
     rm README.md.tmp
-    
+
     echo -e "${GREEN}✓${NC} Updated coverage badge in README.md"
     echo -e "${BLUE}New badge URL:${NC} $BADGE_URL"
 else

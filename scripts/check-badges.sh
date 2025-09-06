@@ -21,7 +21,7 @@ echo ""
 check_url() {
     local url="$1"
     local description="$2"
-    
+
     local status=$(curl -s -o /dev/null -w "%{http_code}" "$url")
     if [ "$status" = "200" ] || [ "$status" = "307" ] || [ "$status" = "302" ]; then
         echo -e "${GREEN}✓${NC} $description: Working (HTTP $status)"
@@ -39,7 +39,7 @@ echo "------------------------"
 # CI Badge
 check_url "https://github.com/$REPO/actions/workflows/ci.yml/badge.svg" "CI Workflow Badge"
 
-# Build Badge  
+# Build Badge
 check_url "https://github.com/$REPO/actions/workflows/build.yml/badge.svg" "Build Workflow Badge"
 
 # Nightly Build Badge

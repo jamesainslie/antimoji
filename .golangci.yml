@@ -10,7 +10,7 @@ run:
 linters:
   enable:
     - errcheck      # Check for unchecked errors
-    - govet         # Report suspicious constructs  
+    - govet         # Report suspicious constructs
     - ineffassign   # Detect ineffectual assignments
     - staticcheck   # Advanced static analysis
     - unused        # Find unused code

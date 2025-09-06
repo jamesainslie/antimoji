@@ -14,37 +14,37 @@ jobs:
     name: Snapshot Build
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
-        
+
     - name: Install GoReleaser
       uses: goreleaser/goreleaser-action@v6
       with:
         distribution: goreleaser
         version: latest
         install-only: true
-        
+
     - name: Create snapshot release
       run: |
         goreleaser build --snapshot --clean --single-target
-        
+
     - name: Test snapshot binary
       run: |
         if [ -f "dist/antimoji_linux_amd64_v1/antimoji" ]; then
           ./dist/antimoji_linux_amd64_v1/antimoji version
           echo "Snapshot build successful"
         fi
-        
+
     - name: Upload snapshot artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -56,30 +56,30 @@ jobs:
     name: Multi-Platform Snapshot
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
-        
+
     - name: Install GoReleaser
       uses: goreleaser/goreleaser-action@v6
       with:
         distribution: goreleaser
         version: latest
         install-only: true
-        
+
     - name: Create multi-platform snapshot
       run: |
         goreleaser build --snapshot --clean
-        
+
     - name: Test all binaries
       run: |
         echo "Testing built binaries:"
@@ -92,21 +92,21 @@ jobs:
             "$binary" version || echo "  Binary test failed"
           fi
         done
-        
+
     - name: Generate build matrix
       run: |
         echo "## Multi-Platform Build Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "| Platform | Architecture | Binary Size | Status |" >> $GITHUB_STEP_SUMMARY
         echo "|----------|-------------|-------------|--------|" >> $GITHUB_STEP_SUMMARY
-        
+
         find dist/ -name "antimoji*" -type f | while read binary; do
           platform=$(echo "$binary" | cut -d'_' -f3)
           arch=$(echo "$binary" | cut -d'_' -f4 | cut -d'/' -f1)
           size=$(ls -lh "$binary" | awk '{print $5}')
           echo "| $platform | $arch | $size | ✅ Built |" >> $GITHUB_STEP_SUMMARY
         done
-        
+
     - name: Upload multi-platform artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -118,36 +118,36 @@ jobs:
     name: Performance Test
     runs-on: ubuntu-latest
     needs: snapshot
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
-      
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
-        
+
     - name: Download snapshot
       uses: actions/download-artifact@v4
       with:
         name: snapshot-${{ github.sha }}
         path: dist/
-        
+
     - name: Performance benchmark
       run: |
         chmod +x dist/antimoji_linux_amd64_v1/antimoji
-        
+
         echo "## Performance Test Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        
+
         # Test on project files
         time_output=$(time -p ./dist/antimoji_linux_amd64_v1/antimoji scan . --stats 2>&1)
         echo "### Project Scan Performance" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         echo "$time_output" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        
+
         # Test version command
         ./dist/antimoji_linux_amd64_v1/antimoji version >> $GITHUB_STEP_SUMMARY

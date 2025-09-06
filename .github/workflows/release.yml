@@ -17,24 +17,24 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: '1.21'
         cache: true
-        
+
     - name: Run tests
       run: |
         go mod download
         go test ./...
-        
+
     - name: Run antimoji linter
       run: |
         make build
@@ -44,26 +44,26 @@ jobs:
     name: Release with GoReleaser
     runs-on: ubuntu-latest
     needs: test
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        
+
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: '1.21'
         cache: true
-        
+
     - name: Log in to Container Registry
       uses: docker/login-action@v3
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-        
+
     - name: Run GoReleaser
       uses: goreleaser/goreleaser-action@v6
       with:
@@ -72,14 +72,14 @@ jobs:
         args: release --clean
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
+
     - name: Upload release artifacts
       uses: actions/upload-artifact@v4
       with:
         name: goreleaser-artifacts
         path: dist/
         retention-days: 90
-        
+
     - name: Generate release summary
       run: |
         echo "## Release ${{ github.ref_name }} Summary" >> $GITHUB_STEP_SUMMARY
@@ -104,21 +104,21 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     if: startsWith(github.ref, 'refs/tags/v')
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
-      
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-      
+
     - name: Log in to Container Registry
       uses: docker/login-action@v3
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-        
+
     - name: Extract metadata
       id: meta
       uses: docker/metadata-action@v5
@@ -130,7 +130,7 @@ jobs:
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
           type=semver,pattern={{major}}
-          
+
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
@@ -147,7 +147,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: release
     if: startsWith(github.ref, 'refs/tags/v')
-    
+
     steps:
     - name: Check out homebrew tap
       uses: actions/checkout@v4
@@ -155,28 +155,28 @@ jobs:
         repository: jamesainslie/homebrew-antimoji
         token: ${{ secrets.GITHUB_TOKEN }}
         path: homebrew-tap
-        
+
     - name: Update Homebrew formula
       run: |
         cd homebrew-tap
-        
+
         # Extract version from tag (remove 'v' prefix)
         VERSION="${{ github.ref_name }}"
         VERSION_NUMBER="${VERSION#v}"
-        
+
         echo "Updating Homebrew formula to version $VERSION_NUMBER"
-        
+
         # Download binaries and calculate checksums
         curl -sL "https://github.com/jamesainslie/antimoji/releases/download/$VERSION/antimoji-$VERSION-darwin-amd64" -o darwin-amd64
         curl -sL "https://github.com/jamesainslie/antimoji/releases/download/$VERSION/antimoji-$VERSION-darwin-arm64" -o darwin-arm64
         curl -sL "https://github.com/jamesainslie/antimoji/releases/download/$VERSION/antimoji-$VERSION-linux-amd64" -o linux-amd64
         curl -sL "https://github.com/jamesainslie/antimoji/releases/download/$VERSION/antimoji-$VERSION-linux-arm64" -o linux-arm64
-        
+
         DARWIN_AMD64_SHA=$(shasum -a 256 darwin-amd64 | cut -d' ' -f1)
         DARWIN_ARM64_SHA=$(shasum -a 256 darwin-arm64 | cut -d' ' -f1)
         LINUX_AMD64_SHA=$(shasum -a 256 linux-amd64 | cut -d' ' -f1)
         LINUX_ARM64_SHA=$(shasum -a 256 linux-arm64 | cut -d' ' -f1)
-        
+
         # Update the formula
         sed -i "s/version \".*\"/version \"$VERSION_NUMBER\"/" Formula/antimoji.rb
         sed -i "s|releases/download/v[^/]*/|releases/download/$VERSION/|g" Formula/antimoji.rb
@@ -185,7 +185,7 @@ jobs:
         sed -i "0,/sha256 \".*\"/s//sha256 \"$DARWIN_ARM64_SHA\"/" Formula/antimoji.rb
         sed -i "0,/sha256 \".*\"/s//sha256 \"$LINUX_AMD64_SHA\"/" Formula/antimoji.rb
         sed -i "0,/sha256 \".*\"/s//sha256 \"$LINUX_ARM64_SHA\"/" Formula/antimoji.rb
-        
+
         # Commit and push changes
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -197,7 +197,7 @@ jobs:
         - Update SHA256 checksums for all platforms
         - Automated update from release workflow"
         git push
-        
+
         echo "✅ Homebrew formula updated to $VERSION"
       continue-on-error: true
 
@@ -206,7 +206,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [release, homebrew]
     if: always()
-    
+
     steps:
     - name: Release notification
       run: |
