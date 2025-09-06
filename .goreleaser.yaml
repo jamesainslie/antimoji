@@ -138,19 +138,21 @@ release:
 
     Built with Go 1.21+
 
-# Homebrew tap (for macOS) - using proper repository name
+# Homebrew tap (for macOS) - using PAT token for proper permissions
 brews:
   - name: antimoji
     repository:
       owner: jamesainslie
       name: homebrew-antimoji
+      token: "{{ .Env.PAT_TOKEN }}"
+    folder: Formula
     homepage: https://github.com/jamesainslie/antimoji
     description: High-performance emoji detection and removal CLI tool
     license: MIT
     install: |
       bin.install "antimoji"
     test: |
-      system "#{bin}/antimoji --version"
+      system "#{bin}/antimoji", "version"
 
 # Docker images are built separately in workflow with multi-stage Dockerfile
 # This avoids conflicts and ensures proper binary compilation

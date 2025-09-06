@@ -19,9 +19,7 @@ test/
 *.md
 *.txt
 
-# Go specific
-go.mod
-go.sum
+# Go specific (keep go.mod and go.sum for Docker builds)
 vendor/
 
 # CI/CD files
