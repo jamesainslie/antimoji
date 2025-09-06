@@ -41,7 +41,7 @@ Antimoji is a high-performance emoji detection and removal tool built with Go us
 - **Binary File Detection**: Automatically skips non-text files
 
 ### CLI Interface
-- **Multiple Commands**: `scan` for detection, `clean` for removal, `generate` for configuration
+- **Multiple Commands**: `scan` for detection, `clean` for removal, `generate` for configuration, `setup-lint` for automated setup
 - **Output Formats**: Table, JSON, and CSV formats
 - **Configuration Profiles**: Default, strict, and CI/CD profiles
 - **Performance Statistics**: Built-in benchmarking and metrics
@@ -69,7 +69,37 @@ sudo cp bin/antimoji /usr/local/bin/
 go install github.com/jamesainslie/antimoji/cmd/antimoji@latest
 ```
 
+### Using Homebrew (macOS/Linux)
+```bash
+brew tap jamesainslie/antimoji
+brew install antimoji
+```
+
+### Using Docker
+```bash
+docker pull ghcr.io/jamesainslie/antimoji:latest
+docker run --rm -v $(pwd):/app ghcr.io/jamesainslie/antimoji:latest scan /app
+```
+
 ## Quick Start
+
+### Automated Setup (Recommended)
+```bash
+# Zero-tolerance setup (no emojis allowed)
+antimoji setup-lint --mode=zero-tolerance
+
+# Allow-list setup (only specific emojis allowed)
+antimoji setup-lint --mode=allow-list --allowed-emojis="✅,❌"
+
+# Permissive setup (warns about excessive usage)
+antimoji setup-lint --mode=permissive
+
+# The setup-lint command automatically:
+# - Generates .antimoji.yaml configuration
+# - Updates .pre-commit-config.yaml with hooks
+# - Configures .golangci.yml integration
+# - Installs pre-commit hooks (optional)
+```
 
 ### Scan for Emojis
 ```bash
@@ -100,6 +130,40 @@ antimoji clean --replace "[EMOJI]" --in-place .
 # Respect allowlist configuration
 antimoji clean --respect-allowlist --in-place .
 ```
+
+## Automated Linting Setup
+
+### Setup-Lint Command
+
+The `setup-lint` command provides one-command configuration for emoji linting:
+
+```bash
+# Zero-tolerance mode (strictest)
+antimoji setup-lint --mode=zero-tolerance
+# Creates configuration that disallows ALL emojis in source code
+
+# Allow-list mode (recommended) 
+antimoji setup-lint --mode=allow-list --allowed-emojis="✅,❌,⚠️"
+# Allows only specified emojis with customizable list
+
+# Permissive mode (development-friendly)
+antimoji setup-lint --mode=permissive  
+# Warns about excessive emoji usage but doesn't fail builds
+
+# Advanced options
+antimoji setup-lint --mode=allow-list \
+  --allowed-emojis="🚀,⚡,✅,❌" \
+  --output-dir=./config \
+  --force \
+  --skip-precommit
+```
+
+**What setup-lint does:**
+- ✅ Generates `.antimoji.yaml` with mode-specific profiles
+- ✅ Creates/updates `.pre-commit-config.yaml` with antimoji hooks
+- ✅ Configures `.golangci.yml` for linting integration
+- ✅ Installs pre-commit hooks (unless `--skip-precommit`)
+- ✅ Provides detailed usage instructions and next steps
 
 ## Linting Policies & Configuration
 
@@ -196,9 +260,9 @@ antimoji clean --config=.antimoji.yaml --respect-allowlist --backup --in-place .
 antimoji scan --config=.antimoji.yaml --format=json > emoji-report.json
 ```
 
-### Quick Start for Linting
+### Quick Start for Linting (Legacy)
 ```bash
-# Install and set up linting in 3 commands
+# Manual setup (use setup-lint command instead for easier configuration)
 go install github.com/jamesainslie/antimoji/cmd/antimoji@latest
 antimoji generate --type=ci-lint --output=.antimoji.yaml .
 antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 .
@@ -240,7 +304,7 @@ make test-pre-commit
 repos:
   # Antimoji emoji linting with auto-cleaning
   - repo: https://github.com/jamesainslie/antimoji
-    rev: v0.9.1  # Use latest release
+    rev: v0.9.6  # Use latest release
     hooks:
       # Strict linting - fails if emojis found in source code
       - id: antimoji-lint
@@ -535,10 +599,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- **Documentation**: See project documentation
+- **Documentation**: See project documentation and changelog
 - **Issues**: [GitHub Issues](https://github.com/jamesainslie/antimoji/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/jamesainslie/antimoji/discussions)
-- **Email**: james@ainslies.us
+- **Wiki**: [Project Wiki](https://github.com/jamesainslie/antimoji/wiki)
 
 ---
 
