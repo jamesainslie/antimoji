@@ -138,12 +138,12 @@ release:
 
     Built with Go 1.21+
 
-# Homebrew tap (for macOS) - keeping brews for now until migration
+# Homebrew tap (for macOS) - using proper repository name
 brews:
   - name: antimoji
     repository:
       owner: jamesainslie
-      name: homebrew-tap
+      name: homebrew-antimoji
     homepage: https://github.com/jamesainslie/antimoji
     description: High-performance emoji detection and removal CLI tool
     license: MIT
@@ -152,22 +152,23 @@ brews:
     test: |
       system "#{bin}/antimoji --version"
 
-# Docker images
-dockers:
-  - image_templates:
-      - "ghcr.io/jamesainslie/antimoji:{{ .Version }}"
-      - "ghcr.io/jamesainslie/antimoji:latest"
-    dockerfile: Dockerfile
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source=https://github.com/jamesainslie/antimoji"
-    use: buildx
-    goos: linux
-    goarch: amd64
+# Docker images are built separately in workflow with multi-stage Dockerfile
+# This avoids conflicts and ensures proper binary compilation
+# dockers:
+#   - image_templates:
+#       - "ghcr.io/jamesainslie/antimoji:{{ .Version }}"
+#       - "ghcr.io/jamesainslie/antimoji:latest"
+#     dockerfile: Dockerfile
+#     build_flag_templates:
+#       - "--pull"
+#       - "--label=org.opencontainers.image.created={{.Date}}"
+#       - "--label=org.opencontainers.image.title={{.ProjectName}}"
+#       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+#       - "--label=org.opencontainers.image.version={{.Version}}"
+#       - "--label=org.opencontainers.image.source=https://github.com/jamesainslie/antimoji"
+#     use: buildx
+#     goos: linux
+#     goarch: amd64
 
 # Validation hooks
 before:
