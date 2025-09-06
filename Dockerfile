@@ -7,13 +7,10 @@ RUN apk add --no-cache git ca-certificates tzdata
 # Set working directory
 WORKDIR /app
 
-# Copy all source code at once to avoid cache issues
+# Copy all source code
 COPY . .
 
-# Download dependencies
-RUN go mod download
-
-# Build the binary
+# Build the binary directly (go build will handle dependencies)
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o antimoji ./cmd/antimoji
 
 # Final stage - minimal runtime image
