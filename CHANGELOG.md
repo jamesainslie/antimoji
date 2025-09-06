@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.3] - 2025-09-06
+
+### Fixed
+- **Critical UTF-8 Emoji Detection Bug**: Fixed issue where files containing emojis were incorrectly classified as binary files, causing emoji detection to be completely skipped
+- **Multi-byte Unicode Handling**: Resolved bug where UTF-8 continuation bytes were counted as "non-printable" characters, triggering false binary file detection
+- **Text File Classification**: Replaced byte-by-byte analysis with proper UTF-8 rune-aware processing for accurate text/binary classification
+
+### Changed
+- **UTF-8 Processing**: Enhanced `isTextContent()` function to use `utf8.DecodeRune()` for proper Unicode character processing
+- **Performance**: Maintained performance while fixing Unicode handling - no regression in processing speed
+- **Testing**: Added comprehensive emoji edge case testing with 13 new test scenarios covering various emoji densities and Unicode combinations
+
+### Technical Details
+- Rewrote text content detection to process complete Unicode runes instead of individual bytes
+- Only count actual control characters as non-printable, not valid UTF-8 continuation bytes
+- Added extensive test coverage for emoji-heavy content, mixed Unicode text, and binary detection edge cases
+- Maintains robust binary file detection while properly handling all Unicode text content
+
+### Impact
+- Files with emojis now correctly identified as text and processed for emoji detection
+- Zero-tolerance emoji policies can now be properly enforced on all text files
+- Fixes critical issue where antimoji appeared to work but wasn't detecting emojis due to incorrect file classification
+
 ## [v0.9.2] - 2025-09-03
 
 ### Fixed
