@@ -4,6 +4,7 @@ package cli
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -177,8 +178,9 @@ func TestGeneratePreCommitConfigForMode(t *testing.T) {
 			contains: []string{
 				"zero-tolerance",
 				"--threshold=0",
-				"--fail-on-found",
+				"--quiet",
 				"Strict emoji linting",
+				"--allow-multiple-documents",
 			},
 		},
 		{
@@ -186,8 +188,9 @@ func TestGeneratePreCommitConfigForMode(t *testing.T) {
 			contains: []string{
 				"allow-list",
 				"--threshold=5",
-				"--fail-on-found",
+				"--quiet",
 				"Allow-list emoji linting",
+				"--allow-multiple-documents",
 			},
 		},
 		{
@@ -195,14 +198,18 @@ func TestGeneratePreCommitConfigForMode(t *testing.T) {
 			contains: []string{
 				"permissive",
 				"--threshold=20",
+				"--quiet",
 				"Permissive emoji linting",
+				"--allow-multiple-documents",
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(string(tt.mode), func(t *testing.T) {
-			config := generatePreCommitConfigForMode(tt.mode)
+			// Create a temporary directory for testing
+			tempDir := t.TempDir()
+			config := generatePreCommitConfigForMode(tt.mode, tempDir)
 
 			for _, expected := range tt.contains {
 				assert.Contains(t, config, expected)
@@ -211,7 +218,11 @@ func TestGeneratePreCommitConfigForMode(t *testing.T) {
 			// Should contain standard structure
 			assert.Contains(t, config, "repos:")
 			assert.Contains(t, config, "antimoji-lint")
-			assert.Contains(t, config, "build-antimoji")
+
+			// Build hook should only be present for local builds
+			if strings.Contains(config, "bin/antimoji") {
+				assert.Contains(t, config, "build-antimoji")
+			}
 		})
 	}
 }
@@ -225,24 +236,24 @@ func TestGenerateGolangCIConfigForMode(t *testing.T) {
 			mode: ZeroToleranceMode,
 			contains: []string{
 				"antimoji:",
-				"profile: ci-lint",
 				"mode: zero-tolerance",
+				"config: .antimoji.yaml",
 			},
 		},
 		{
 			mode: AllowListMode,
 			contains: []string{
 				"antimoji:",
-				"profile: allow-list",
 				"mode: allow-list",
+				"config: .antimoji.yaml",
 			},
 		},
 		{
 			mode: PermissiveMode,
 			contains: []string{
 				"antimoji:",
-				"profile: permissive",
 				"mode: permissive",
+				"config: .antimoji.yaml",
 			},
 		},
 	}

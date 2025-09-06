@@ -372,12 +372,12 @@ func updatePreCommitConfig(targetDir string, mode LintMode, opts *SetupLintOptio
 	configPath := filepath.Join(targetDir, ".pre-commit-config.yaml")
 
 	// Generate pre-commit configuration based on mode
-	preCommitConfig := generatePreCommitConfigForMode(mode)
+	preCommitConfig := generatePreCommitConfigForMode(mode, targetDir)
 
 	// Check if file exists
 	if _, err := os.Stat(configPath); err == nil && !opts.Force {
 		if !quiet {
-			fmt.Printf("️Pre-commit config already exists: %s (use --force to overwrite)\n", configPath)
+			fmt.Printf("Pre-commit config already exists: %s (use --force to overwrite)\n", configPath)
 		}
 		return nil
 	}
@@ -385,6 +385,11 @@ func updatePreCommitConfig(targetDir string, mode LintMode, opts *SetupLintOptio
 	// Write configuration
 	if err := os.WriteFile(configPath, []byte(preCommitConfig), 0644); err != nil {
 		return fmt.Errorf("failed to write pre-commit configuration: %w", err)
+	}
+
+	// Validate the generated configuration
+	if err := validateConfiguration(configPath); err != nil {
+		return fmt.Errorf("generated configuration is invalid: %w", err)
 	}
 
 	if !quiet {
@@ -395,18 +400,51 @@ func updatePreCommitConfig(targetDir string, mode LintMode, opts *SetupLintOptio
 }
 
 // generatePreCommitConfigForMode creates pre-commit configuration based on linting mode.
-func generatePreCommitConfigForMode(mode LintMode) string {
+func generatePreCommitConfigForMode(mode LintMode, targetDir string) string {
+	// Detect if antimoji is globally installed or needs local build
+	antimojiCmd := detectAntimojiCommand()
+
 	hookBehavior := ""
 	switch mode {
 	case ZeroToleranceMode:
-		hookBehavior = `        entry: bin/antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 --quiet --fail-on-found
-        description: Strict emoji linting - zero tolerance for emojis in source code`
+		hookBehavior = fmt.Sprintf(`entry: %s scan --config=.antimoji.yaml --threshold=0 --quiet
+        description: Strict emoji linting - zero tolerance for emojis in source code`, antimojiCmd)
 	case AllowListMode:
-		hookBehavior = `        entry: bin/antimoji scan --config=.antimoji.yaml --profile=allow-list --threshold=5 --quiet --fail-on-found
-        description: Allow-list emoji linting - only specific emojis allowed`
+		hookBehavior = fmt.Sprintf(`entry: %s scan --config=.antimoji.yaml --threshold=5 --quiet
+        description: Allow-list emoji linting - only specific emojis allowed`, antimojiCmd)
 	case PermissiveMode:
-		hookBehavior = `        entry: bin/antimoji scan --config=.antimoji.yaml --profile=permissive --threshold=20 --quiet
-        description: Permissive emoji linting - warns about excessive emoji usage`
+		hookBehavior = fmt.Sprintf(`entry: %s scan --config=.antimoji.yaml --threshold=20 --quiet
+        description: Permissive emoji linting - warns about excessive emoji usage`, antimojiCmd)
+	}
+
+	// Determine if we need a build hook (only for local builds)
+	buildHookSection := ""
+	if antimojiCmd == "bin/antimoji" {
+		buildHookSection = `
+      # Build antimoji before running hooks
+      - id: build-antimoji
+        name: Build Antimoji Binary
+        description: Build antimoji binary for linting hooks
+        entry: make build
+        language: system
+        files: \.(go)$
+        pass_filenames: false
+        require_serial: true
+        stages: [pre-commit, pre-push]
+`
+	}
+
+	// Conditionally add Go hooks if go.mod exists
+	goHooksSection := ""
+	if hasGoModule(targetDir) {
+		goHooksSection = `  # Go-specific hooks
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+      - id: go-mod-tidy
+
+`
 	}
 
 	return fmt.Sprintf(`# Pre-commit configuration for Antimoji project
@@ -422,31 +460,14 @@ repos:
       - id: end-of-file-fixer
         exclude: \.md$
       - id: check-yaml
+        args: [--allow-multiple-documents]
       - id: check-added-large-files
       - id: check-merge-conflict
 
-  # Go-specific hooks
-  - repo: https://github.com/dnephin/pre-commit-golang
-    rev: v0.5.1
-    hooks:
-      - id: go-fmt
-      - id: go-vet
-      - id: go-mod-tidy
-
+%s
   # Local antimoji hooks
   - repo: local
-    hooks:
-      # Build antimoji before running hooks
-      - id: build-antimoji
-        name: Build Antimoji Binary
-        description: Build antimoji binary for linting hooks
-        entry: make build
-        language: system
-        files: \.(go)$
-        pass_filenames: false
-        require_serial: true
-        stages: [pre-commit, pre-push]
-
+    hooks:%s
       # Antimoji emoji linting
       - id: antimoji-lint
         name: Antimoji Emoji Linter (%s)
@@ -469,7 +490,7 @@ repos:
           )$
         pass_filenames: true
         require_serial: false
-`, mode, mode, hookBehavior)
+`, mode, goHooksSection, buildHookSection, mode, hookBehavior)
 }
 
 // updateGolangCIConfig updates or creates .golangci.yml.
@@ -532,9 +553,11 @@ issues:
 
 // generateGolangCIConfigForMode creates golangci-lint configuration for antimoji.
 func generateGolangCIConfigForMode(mode LintMode) string {
-	profileName := string(mode)
-	if mode == ZeroToleranceMode {
-		profileName = "ci-lint"
+	antimojiCmd := detectAntimojiCommand()
+
+	// Convert relative path to absolute for golangci-lint
+	if antimojiCmd == "bin/antimoji" {
+		antimojiCmd = "./bin/antimoji"
 	}
 
 	return fmt.Sprintf(`
@@ -542,19 +565,18 @@ func generateGolangCIConfigForMode(mode LintMode) string {
 linters-settings:
   custom:
     antimoji:
-      path: ./bin/antimoji
+      path: %s
       description: "Emoji detection and linting"
       original-url: github.com/antimoji/antimoji
       settings:
         config: .antimoji.yaml
-        profile: %s
         mode: %s
 
 # Enable custom antimoji linter
 linters:
   enable:
     - antimoji
-`, profileName, string(mode))
+`, antimojiCmd, string(mode))
 }
 
 // installPreCommitHooks attempts to install pre-commit hooks.
@@ -631,4 +653,54 @@ func isValidLintMode(mode LintMode) bool {
 	default:
 		return false
 	}
+}
+
+// detectAntimojiCommand determines the best way to invoke antimoji.
+// Returns "antimoji" if globally installed, "bin/antimoji" if local build is preferred.
+func detectAntimojiCommand() string {
+	// Check if antimoji is globally available
+	if _, err := exec.LookPath("antimoji"); err == nil {
+		// Global antimoji is available, prefer it
+		return "antimoji"
+	}
+
+	// Check if we're in the antimoji source directory with build capability
+	if _, err := os.Stat("Makefile"); err == nil {
+		// We have a Makefile, assume local build is possible
+		return "bin/antimoji"
+	}
+
+	// Default to global antimoji (user will need to install it)
+	return "antimoji"
+}
+
+// hasGoModule checks if the target directory has a go.mod file.
+func hasGoModule(targetDir string) bool {
+	_, err := os.Stat(filepath.Join(targetDir, "go.mod"))
+	return err == nil
+}
+
+// validateConfiguration validates the generated pre-commit configuration.
+func validateConfiguration(configPath string) error {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read configuration file: %w", err)
+	}
+
+	// Basic YAML validation
+	var config interface{}
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return fmt.Errorf("invalid YAML syntax: %w", err)
+	}
+
+	// Check for common issues in the configuration
+	configStr := string(data)
+	if strings.Contains(configStr, "--profile=") {
+		return fmt.Errorf("configuration contains invalid --profile flag")
+	}
+	if strings.Contains(configStr, "--fail-on-found") {
+		return fmt.Errorf("configuration contains invalid --fail-on-found flag")
+	}
+
+	return nil
 }
