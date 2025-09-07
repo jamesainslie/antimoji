@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.15] - 2025-09-07
+
+### Fixed
+- **Pre-commit Integration Bug**: Fixed critical issue where clean step would report "0 modified" while scan step would still find emojis, causing zero-tolerance enforcement to fail (#6)
+- **Missing Flag Support**: Added `--ignore-allowlist` flag to clean command for consistency with scan command
+- **Profile Inconsistency**: Resolved issues where different profiles between clean and scan commands caused unreliable behavior
+- **Setup-Lint Configuration**: Updated `setup-lint` command to generate improved two-step workflow (clean + verify) with consistent profiles
+
+### Added
+- **Unified Allowlist Processing**: New `internal/core/allowlist/processor.go` provides consistent allowlist handling across all commands
+- **Pre-commit Examples**: Added `examples/pre-commit/` directory with working zero-tolerance and CI-friendly configurations
+- **Comprehensive Documentation**: Added troubleshooting guide and best practices for pre-commit integration
+- **Integration Tests**: Added `internal/cli/clean_precommit_test.go` with comprehensive pre-commit workflow testing
+
+### Changed
+- **Setup-Lint Output**: Now generates improved pre-commit configurations using `entry: antimoji` with `args:` instead of problematic `bash -c` patterns
+- **CI Workflow**: Updated antimoji linting threshold to be compatible with ci-lint profile design
+- **Flag Consistency**: Made `--ignore-allowlist` take precedence over `--respect-allowlist` in both commands for consistent behavior
+
+### Technical Details
+- Resolved the "clean reports 0 modified but still finds emojis" issue by ensuring consistent profile usage
+- Fixed argument forwarding issues in pre-commit hook configurations  
+- Added validation to detect common pre-commit configuration mistakes
+- Maintained full backward compatibility with existing configurations
+
 ## [v0.9.14] - 2025-07-09
 
 ### Fixed
