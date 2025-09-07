@@ -3,7 +3,7 @@ profiles:
   zero:
     emoji_allowlist: []
     file_ignore_list: []
-    directory_ignore_list: [.git, vendor, dist, bin, node_modules]
+    directory_ignore_list: [.git, vendor, dist, bin, node_modules, examples, .cursor, docs_backup_20250903_141556]
     description: "Strict zero-tolerance profile - no emojis anywhere"
 
   ci-lint:
@@ -28,5 +28,5 @@ profiles:
       - bin/**/*
       - 'examples/**/*'
       - 'PRECOMMIT_REFACTOR_SUMMARY.md'
-    directory_ignore_list: [.git, vendor, dist, bin, node_modules]
+    directory_ignore_list: [.git, vendor, dist, bin, node_modules, examples, .cursor, docs_backup_20250903_141556]
     description: "CI-friendly profile with some allowed emojis"
