@@ -1,0 +1,66 @@
+# CI-friendly pre-commit configuration for Antimoji
+# This configuration allows certain emojis in documentation but enforces strict rules in code
+
+repos:
+  - repo: local
+    hooks:
+      # Step 1: Clean non-allowed emojis (respects allowlist)
+      - id: antimoji-clean
+        name: "Auto-clean Non-allowed Emojis"
+        entry: antimoji
+        args: [clean, --config=.antimoji.yaml, --profile=ci-lint, --in-place, --quiet]
+        language: system
+        types: [text]
+        exclude: |
+          (?x)^(
+            vendor/.*|
+            \.git/.*|
+            bin/.*|
+            dist/.*|
+            node_modules/.*|
+            \.antimoji\.yaml
+          )$
+        pass_filenames: true
+        require_serial: true
+
+      # Step 2: Verify only allowed emojis remain
+      - id: antimoji-verify
+        name: "CI-friendly Emoji Verification"
+        entry: antimoji
+        args: [scan, --config=.antimoji.yaml, --profile=ci-lint, --threshold=0, --quiet]
+        language: system
+        types: [text]
+        exclude: |
+          (?x)^(
+            vendor/.*|
+            \.git/.*|
+            bin/.*|
+            dist/.*|
+            node_modules/.*|
+            \.antimoji\.yaml
+          )$
+        pass_filenames: true
+        require_serial: true
+
+# Required .antimoji.yaml configuration:
+# version: 0.5.0
+# profiles:
+#   ci-lint:
+#     emoji_allowlist:
+#       - "✅"  # Success/checkmark
+#       - "❌"  # Failure/cross
+#       - "⚠️"  # Warning
+#       - "✨"  # Sparkles/enhancement
+#       - ":("  # Sad face emoticon
+#       - ":/"  # Confused emoticon
+#     file_ignore_list:
+#       - '**/*_test.go'
+#       - '**/test/**/*'
+#       - '**/testdata/**/*'
+#       - '**/fixtures/**/*'
+#       - README.md
+#       - CHANGELOG.md
+#       - .github/**/*
+#       - scripts/**/*
+#     directory_ignore_list: [.git, vendor, dist, bin, node_modules]
+#     description: "CI-friendly profile with some allowed emojis"

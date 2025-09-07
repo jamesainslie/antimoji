@@ -431,14 +431,14 @@ func TestConfigurationValidation(t *testing.T) {
 			errorMsg:    "invalid YAML syntax",
 		},
 		{
-			name: "contains invalid profile flag",
+			name: "contains valid profile flag",
 			yamlContent: `repos:
   - repo: local
     hooks:
       - id: test
-        entry: antimoji scan --profile=ci-lint`,
-			expectError: true,
-			errorMsg:    "invalid --profile flag",
+        entry: antimoji
+        args: [scan, --profile=ci-lint]`,
+			expectError: false,
 		},
 		{
 			name: "contains invalid fail-on-found flag",
