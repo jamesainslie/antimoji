@@ -2,6 +2,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"github.com/antimoji/antimoji/internal/core/allowlist"
 	"github.com/antimoji/antimoji/internal/core/detector"
 	"github.com/antimoji/antimoji/internal/core/processor"
+	"github.com/antimoji/antimoji/internal/observability/logging"
 	"github.com/antimoji/antimoji/internal/types"
 	"github.com/spf13/cobra"
 )
@@ -110,9 +112,10 @@ func runScan(cmd *cobra.Command, args []string, opts *ScanOptions) error {
 		return fmt.Errorf("failed to discover files: %w", err)
 	}
 
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Found %d files to process\n", len(filePaths))
-	}
+	ctx := context.Background()
+	logging.Info(ctx, "File discovery completed",
+		"files_found", len(filePaths),
+		"operation", "scan")
 
 	// Create emoji patterns
 	patterns := detector.DefaultEmojiPatterns()
@@ -126,9 +129,9 @@ func runScan(cmd *cobra.Command, args []string, opts *ScanOptions) error {
 		}
 		emojiAllowlist = allowlistResult.Unwrap()
 
-		if verbose {
-			fmt.Fprintf(os.Stderr, "Using allowlist with %d patterns\n", emojiAllowlist.Size())
-		}
+		logging.Info(ctx, "Allowlist configured",
+			"patterns_count", emojiAllowlist.Size(),
+			"operation", "scan")
 	}
 
 	// Process files (use concurrent processing if multiple files and workers configured)
@@ -165,9 +168,10 @@ func runScan(cmd *cobra.Command, args []string, opts *ScanOptions) error {
 			totalEmojis += result.DetectionResult.TotalCount
 		}
 		if totalEmojis > opts.Threshold {
-			if !quiet {
-				fmt.Fprintf(os.Stderr, "Emoji threshold exceeded: found %d emojis (limit: %d)\n", totalEmojis, opts.Threshold)
-			}
+			logging.Error(ctx, "Emoji threshold exceeded",
+				"emojis_found", totalEmojis,
+				"threshold", opts.Threshold,
+				"operation", "scan")
 			return fmt.Errorf("emoji threshold exceeded: found %d emojis (limit: %d)", totalEmojis, opts.Threshold)
 		}
 	}
