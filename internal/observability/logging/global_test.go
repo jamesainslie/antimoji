@@ -171,7 +171,8 @@ func TestGlobalLoggerWithContext(t *testing.T) {
 	err := InitGlobalLogger(config)
 	require.NoError(t, err)
 
-	ctx := context.WithValue(context.Background(), "traceID", "xyz789")
+	type contextKey string
+	ctx := context.WithValue(context.Background(), contextKey("traceID"), "xyz789")
 
 	// Test WithContext function
 	contextLogger := WithContext(ctx)
