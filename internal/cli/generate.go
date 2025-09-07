@@ -2,6 +2,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"github.com/antimoji/antimoji/internal/config"
 	"github.com/antimoji/antimoji/internal/core/detector"
 	"github.com/antimoji/antimoji/internal/core/processor"
+	"github.com/antimoji/antimoji/internal/observability/logging"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -125,9 +127,11 @@ func runGenerate(_ *cobra.Command, args []string, opts *GenerateOptions) error {
 		args = []string{"."}
 	}
 
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Analyzing emoji usage in project...\n")
-	}
+	ctx := context.Background()
+	logging.Info(ctx, "Starting emoji analysis for allowlist generation",
+		"operation", "generate",
+		"type", opts.Type,
+		"paths", args)
 
 	// Analyze emoji usage in the project
 	analysis, err := analyzeEmojiUsage(args, opts)
@@ -135,10 +139,11 @@ func runGenerate(_ *cobra.Command, args []string, opts *GenerateOptions) error {
 		return fmt.Errorf("failed to analyze emoji usage: %w", err)
 	}
 
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Found %d unique emojis across %d files\n",
-			analysis.Statistics.UniqueEmojis, analysis.Statistics.FilesWithEmojis)
-	}
+	logging.Info(ctx, "Emoji analysis completed",
+		"operation", "generate",
+		"unique_emojis", analysis.Statistics.UniqueEmojis,
+		"files_with_emojis", analysis.Statistics.FilesWithEmojis,
+		"total_files_scanned", analysis.Statistics.TotalFilesScanned)
 
 	// Generate allowlist configuration based on type
 	allowlistConfig, err := generateAllowlistConfig(analysis, opts)
@@ -147,7 +152,7 @@ func runGenerate(_ *cobra.Command, args []string, opts *GenerateOptions) error {
 	}
 
 	// Output the configuration
-	if err := outputConfiguration(allowlistConfig, opts, time.Since(startTime)); err != nil {
+	if err := outputConfiguration(ctx, allowlistConfig, opts, time.Since(startTime)); err != nil {
 		return fmt.Errorf("failed to output configuration: %w", err)
 	}
 
@@ -645,7 +650,7 @@ func filterByMinUsage(emojis []string, analysis *EmojiUsageAnalysis, minUsage in
 }
 
 // outputConfiguration outputs the generated configuration.
-func outputConfiguration(config *AllowlistConfig, opts *GenerateOptions, duration time.Duration) error {
+func outputConfiguration(ctx context.Context, config *AllowlistConfig, opts *GenerateOptions, duration time.Duration) error {
 	var output []byte
 	var err error
 
@@ -673,9 +678,10 @@ func outputConfiguration(config *AllowlistConfig, opts *GenerateOptions, duratio
 
 	// Output to file or stdout
 	if opts.Output != "" {
-		if verbose {
-			fmt.Fprintf(os.Stderr, "Writing configuration to %s\n", opts.Output)
-		}
+		logging.Info(ctx, "Writing configuration to file",
+			"operation", "generate",
+			"output_file", opts.Output,
+			"format", opts.Format)
 		return os.WriteFile(opts.Output, output, 0600)
 	}
 	fmt.Print(string(output))
