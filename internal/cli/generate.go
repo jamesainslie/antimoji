@@ -325,7 +325,7 @@ func generateAllowlistConfig(analysis *EmojiUsageAnalysis, opts *GenerateOptions
 	}
 
 	config := &AllowlistConfig{
-		Version: "0.5.0",
+		Version: config.CurrentConfigVersion,
 		Profiles: map[string]Profile{
 			profileName: profile,
 		},

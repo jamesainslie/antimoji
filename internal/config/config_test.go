@@ -14,7 +14,7 @@ func TestLoadConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	t.Run("loads valid YAML config", func(t *testing.T) {
-		configContent := `version: "0.1.0"
+		configContent := `version: "0.9.0"
 profiles:
   default:
     recursive: true
@@ -36,7 +36,7 @@ profiles:
 		assert.True(t, result.IsOk())
 
 		config := result.Unwrap()
-		assert.Equal(t, "0.1.0", config.Version)
+		assert.Equal(t, CurrentConfigVersion, config.Version)
 		assert.Contains(t, config.Profiles, "default")
 
 		profile := config.Profiles["default"]
@@ -65,7 +65,7 @@ profiles:
 
 	t.Run("handles invalid YAML", func(t *testing.T) {
 		configContent := `
-version: "0.1.0"
+version: "0.9.0"
 profiles:
   default:
     recursive: true
@@ -97,7 +97,7 @@ func TestDefaultConfig(t *testing.T) {
 	t.Run("returns sensible defaults", func(t *testing.T) {
 		config := DefaultConfig()
 
-		assert.Equal(t, "0.1.0", config.Version)
+		assert.Equal(t, CurrentConfigVersion, config.Version)
 		assert.Contains(t, config.Profiles, "default")
 
 		profile := config.Profiles["default"]
@@ -329,7 +329,7 @@ func ExampleLoadConfig() {
 	}()
 
 	// Write config content
-	configContent := `version: "0.1.0"
+	configContent := `version: "0.9.0"
 profiles:
   default:
     recursive: true
@@ -347,5 +347,5 @@ profiles:
 		config := result.Unwrap()
 		fmt.Println("Config version:", config.Version)
 	}
-	// Output: Config version: 0.1.0
+	// Output: Config version: 0.9.0
 }
