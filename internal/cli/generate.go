@@ -166,7 +166,7 @@ func analyzeEmojiUsage(paths []string, opts *GenerateOptions) (*EmojiUsageAnalys
 		Recursive:           opts.Recursive,
 		UnicodeEmojis:       true,
 		TextEmoticons:       true,
-		CustomPatterns:      []string{"", "", "", "", ":warning:", ":check:", ":cross:"},
+		CustomPatterns:      []string{},    // No custom patterns for analysis
 		IncludePatterns:     []string{"*"}, // Include all file types for analysis
 		ExcludePatterns:     []string{},    // Don't exclude anything initially
 		DirectoryIgnoreList: []string{".git", "vendor", "node_modules", "dist", "bin"},
@@ -175,8 +175,10 @@ func analyzeEmojiUsage(paths []string, opts *GenerateOptions) (*EmojiUsageAnalys
 		MaxFileSize:         100 * 1024 * 1024,
 	}
 
-	// Discover all files
-	filePaths, err := discoverAllFiles(paths, scanProfile)
+	// Discover files using the same logic as scan command for consistency
+	// Force recursive to true for generate command as it needs to analyze the entire project
+	scanOpts := &ScanOptions{Recursive: true}
+	filePaths, err := discoverFiles(paths, scanOpts, scanProfile)
 	if err != nil {
 		return nil, err
 	}
@@ -500,52 +502,7 @@ func generateFullAllowlist(analysis *EmojiUsageAnalysis, opts *GenerateOptions) 
 	return removeDuplicates(allowedEmojis), fileIgnoreList, directoryIgnoreList
 }
 
-// discoverAllFiles discovers all files for comprehensive analysis.
-func discoverAllFiles(paths []string, profile config.Profile) ([]string, error) {
-	var filePaths []string
-
-	for _, path := range paths {
-		stat, err := os.Stat(path)
-		if err != nil {
-			return nil, err
-		}
-
-		if stat.IsDir() {
-			err := filepath.WalkDir(path, func(filePath string, d os.DirEntry, err error) error {
-				if err != nil {
-					return err
-				}
-
-				if d.IsDir() {
-					// Check if directory should be ignored
-					dirName := filepath.Base(filePath)
-					for _, ignorePattern := range profile.DirectoryIgnoreList {
-						if matched, _ := filepath.Match(ignorePattern, dirName); matched {
-							return filepath.SkipDir
-						}
-					}
-					return nil
-				}
-
-				// Include all text-based files for analysis
-				if isTextFile(filePath) {
-					filePaths = append(filePaths, filePath)
-				}
-
-				return nil
-			})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			if isTextFile(path) {
-				filePaths = append(filePaths, path)
-			}
-		}
-	}
-
-	return filePaths, nil
-}
+// Note: discoverAllFiles function removed - now using discoverFiles from scan.go for consistency
 
 // categorizeFile categorizes a file based on its path and extension.
 func categorizeFile(filePath string) string {

@@ -145,10 +145,10 @@ func DefaultConfig() Config {
 				// Emoji detection
 				UnicodeEmojis:  true,
 				TextEmoticons:  true,
-				CustomPatterns: []string{"", "", "", ""},
+				CustomPatterns: []string{}, // No custom patterns by default
 
 				// Allowlist and ignore functionality
-				EmojiAllowlist: []string{"", "", ""},
+				EmojiAllowlist: []string{}, // No default allowlist - will be empty by default
 				FileIgnoreList: []string{
 					"*.min.js", "*.min.css", "vendor/**/*", "node_modules/**/*",
 					".git/**/*", "**/*.generated.*",
