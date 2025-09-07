@@ -140,13 +140,28 @@ release:
     Built with Go 1.21+
 
 # Homebrew tap (for macOS) - using PAT token for proper permissions
+# CRITICAL CONFIGURATION: This section handles Homebrew formula updates
+#
+# IMPORTANT: The following settings are REQUIRED to prevent issues:
+# 1. folder: Formula - MUST be specified to place .rb files in Formula/ directory
+#    Without this, files are placed at repository root and Homebrew won't find them
+# 2. token: PAT_TOKEN - Personal Access Token with repo permissions required
+#    GITHUB_TOKEN alone is insufficient for cross-repo operations
+# 3. Repository must be named 'homebrew-{project}' for Homebrew tap convention
+#
+# Common Issues to Avoid:
+# - Missing 'folder: Formula' causes formula files placed at root level
+# - Using GITHUB_TOKEN instead of PAT_TOKEN causes silent failures
+# - Incorrect repository name breaks Homebrew tap discovery
 brews:
   - name: antimoji
     repository:
       owner: jamesainslie
       name: homebrew-antimoji
+      # CRITICAL: Use PAT_TOKEN, not GITHUB_TOKEN for cross-repo access
       token: "{{ .Env.PAT_TOKEN }}"
       branch: main
+    # CRITICAL: Must specify Formula folder or files go to repository root
     folder: Formula
     homepage: https://github.com/jamesainslie/antimoji
     description: High-performance emoji detection and removal CLI tool
