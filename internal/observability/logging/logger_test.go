@@ -272,7 +272,8 @@ func TestLoggerWithContext(t *testing.T) {
 	logger, err := NewLogger(config)
 	require.NoError(t, err)
 
-	ctx := context.WithValue(context.Background(), "traceID", "abc123")
+	type contextKey string
+	ctx := context.WithValue(context.Background(), contextKey("traceID"), "abc123")
 	contextLogger := logger.WithContext(ctx)
 
 	contextLogger.Info(ctx, "test message")
