@@ -3,7 +3,6 @@ package config
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/antimoji/antimoji/internal/types"
 	"github.com/spf13/viper"
@@ -11,7 +10,6 @@ import (
 
 // Config represents the complete application configuration.
 type Config struct {
-	Version  string             `yaml:"version" json:"version"`
 	Profiles map[string]Profile `yaml:"profiles" json:"profiles"`
 }
 
@@ -67,7 +65,6 @@ func LoadConfig(configPath string) types.Result[Config] {
 	}
 
 	config := Config{
-		Version:  v.GetString("version"),
 		Profiles: make(map[string]Profile),
 	}
 
@@ -134,7 +131,6 @@ func loadProfile(v *viper.Viper, profileName string) (Profile, error) {
 // DefaultConfig returns the default configuration.
 func DefaultConfig() Config {
 	return Config{
-		Version: "0.1.0",
 		Profiles: map[string]Profile{
 			"default": {
 				// File processing
@@ -145,10 +141,10 @@ func DefaultConfig() Config {
 				// Emoji detection
 				UnicodeEmojis:  true,
 				TextEmoticons:  true,
-				CustomPatterns: []string{":smile:", ":frown:", ":thumbs_up:", ":heart:"},
+				CustomPatterns: []string{}, // No custom patterns by default
 
 				// Allowlist and ignore functionality
-				EmojiAllowlist: []string{"✅", "❌", "⚠️"},
+				EmojiAllowlist: []string{}, // No default allowlist - will be empty by default
 				FileIgnoreList: []string{
 					"*.min.js", "*.min.css", "vendor/**/*", "node_modules/**/*",
 					".git/**/*", "**/*.generated.*",
@@ -161,8 +157,8 @@ func DefaultConfig() Config {
 				Replacement:        "",
 				PreserveWhitespace: true,
 
-				// File filters
-				IncludePatterns: []string{"*.go", "*.md", "*.js", "*.py", "*.ts", "*.jsx", "*.tsx"},
+				// File filters - empty include patterns means include all files
+				IncludePatterns: []string{}, // Empty = include all files (unless excluded)
 				ExcludePatterns: []string{"vendor/*", "node_modules/*", ".git/*"},
 
 				// CI/CD and linting
@@ -200,12 +196,6 @@ func GetProfile(config Config, profileName string) types.Result[Profile] {
 
 // ValidateConfig validates the configuration for correctness.
 func ValidateConfig(config Config) types.Result[Config] {
-	// Validate version format (semantic versioning)
-	versionRegex := regexp.MustCompile(`^v?\d+\.\d+\.\d+(-[a-zA-Z0-9]+)?(\+[a-zA-Z0-9]+)?$`)
-	if config.Version != "" && !versionRegex.MatchString(config.Version) {
-		return types.Err[Config](fmt.Errorf("invalid version format: %s", config.Version))
-	}
-
 	// Validate each profile
 	for name, profile := range config.Profiles {
 		if err := validateProfile(name, profile); err != nil {

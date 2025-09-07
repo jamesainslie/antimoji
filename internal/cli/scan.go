@@ -265,7 +265,8 @@ func shouldIncludeFile(filePath string, opts *ScanOptions, profile config.Profil
 		}
 	}
 
-	// Check include patterns
+	// Check include patterns - only apply filtering if patterns are explicitly defined
+	// If no include patterns are specified, include all files (unless excluded above)
 	if len(profile.IncludePatterns) > 0 {
 		included := false
 		for _, pattern := range profile.IncludePatterns {
@@ -278,6 +279,7 @@ func shouldIncludeFile(filePath string, opts *ScanOptions, profile config.Profil
 			return false
 		}
 	}
+	// If IncludePatterns is empty, default to including all files
 
 	// Additional command-line filters
 	if opts.IncludePattern != "" {
