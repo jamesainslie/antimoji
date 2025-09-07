@@ -242,12 +242,36 @@ func validateProfile(name string, profile Profile) error {
 
 // ToProcessingConfig converts a Profile to a ProcessingConfig.
 func ToProcessingConfig(profile Profile) types.ProcessingConfig {
+	// Use sensible defaults for zero values that would break processing
+	maxFileSize := profile.MaxFileSize
+	if maxFileSize <= 0 {
+		maxFileSize = 100 * 1024 * 1024 // 100MB default
+	}
+
+	bufferSize := profile.BufferSize
+	if bufferSize <= 0 {
+		bufferSize = 64 * 1024 // 64KB default
+	}
+
+	// For emoji detection, use defaults that make sense for typical usage
+	// If the profile was loaded from a minimal config file, these might be false
+	// but we want emoji detection enabled by default
+	enableUnicode := profile.UnicodeEmojis
+	enableEmoticons := profile.TextEmoticons
+
+	// If both are false and no custom patterns, enable defaults
+	// This handles the case where a minimal config doesn't specify emoji detection settings
+	if !enableUnicode && !enableEmoticons && len(profile.CustomPatterns) == 0 {
+		enableUnicode = true   // Enable Unicode emojis by default
+		enableEmoticons = true // Enable text emoticons by default
+	}
+
 	return types.ProcessingConfig{
-		EnableUnicode:   profile.UnicodeEmojis,
-		EnableEmoticons: profile.TextEmoticons,
+		EnableUnicode:   enableUnicode,
+		EnableEmoticons: enableEmoticons,
 		EnableCustom:    len(profile.CustomPatterns) > 0,
-		MaxFileSize:     profile.MaxFileSize,
-		BufferSize:      profile.BufferSize,
+		MaxFileSize:     maxFileSize,
+		BufferSize:      bufferSize,
 	}
 }
 
