@@ -139,8 +139,7 @@ func TestGlobalFlags(t *testing.T) {
 
 	t.Run("config flag loads custom config", func(t *testing.T) {
 		// Create a test config file
-		configContent := `version: "0.1.0"
-profiles:
+		configContent := `profiles:
   default:
     recursive: false
     unicode_emojis: false`

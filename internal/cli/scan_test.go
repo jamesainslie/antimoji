@@ -192,6 +192,64 @@ func TestScanHelpers(t *testing.T) {
 		assert.False(t, shouldIncludeFile("main.py", opts, profile))      // Not included
 	})
 
+	t.Run("shouldIncludeFile with empty include patterns", func(t *testing.T) {
+		// This tests the bug fix: empty IncludePatterns should include all files
+		profile := config.Profile{
+			IncludePatterns: []string{}, // Empty - should include all files
+			ExcludePatterns: []string{"*_test.go"},
+			FileIgnoreList:  []string{"*.min.js"},
+		}
+		opts := &ScanOptions{}
+
+		// All files should be included when no include patterns are specified
+		assert.True(t, shouldIncludeFile("main.go", opts, profile))
+		assert.True(t, shouldIncludeFile("README.md", opts, profile))
+		assert.True(t, shouldIncludeFile("main.py", opts, profile))     // Should be included now
+		assert.True(t, shouldIncludeFile("config.yaml", opts, profile)) // Should be included now
+		assert.True(t, shouldIncludeFile("script.sh", opts, profile))   // Should be included now
+
+		// But exclusions should still work
+		assert.False(t, shouldIncludeFile("main_test.go", opts, profile)) // Still excluded
+		assert.False(t, shouldIncludeFile("app.min.js", opts, profile))   // Still ignored
+	})
+
+	t.Run("shouldIncludeFile with nil include patterns", func(t *testing.T) {
+		// Test with nil slice (same behavior as empty slice)
+		profile := config.Profile{
+			IncludePatterns: nil, // Nil - should include all files
+			ExcludePatterns: []string{"*_temp.go"},
+			FileIgnoreList:  []string{},
+		}
+		opts := &ScanOptions{}
+
+		// All files should be included when include patterns is nil
+		assert.True(t, shouldIncludeFile("main.go", opts, profile))
+		assert.True(t, shouldIncludeFile("README.md", opts, profile))
+		assert.True(t, shouldIncludeFile("config.json", opts, profile))
+		assert.True(t, shouldIncludeFile("script.py", opts, profile))
+
+		// But exclusions should still work
+		assert.False(t, shouldIncludeFile("main_temp.go", opts, profile)) // Excluded by pattern
+	})
+
+	t.Run("shouldIncludeFile command-line overrides work", func(t *testing.T) {
+		profile := config.Profile{
+			IncludePatterns: []string{}, // Empty - include all by default
+			ExcludePatterns: []string{},
+			FileIgnoreList:  []string{},
+		}
+
+		// Test command-line include filter
+		optsInclude := &ScanOptions{IncludePattern: "*.go"}
+		assert.True(t, shouldIncludeFile("main.go", optsInclude, profile))
+		assert.False(t, shouldIncludeFile("README.md", optsInclude, profile))
+
+		// Test command-line exclude filter
+		optsExclude := &ScanOptions{ExcludePattern: "*_test.go"}
+		assert.True(t, shouldIncludeFile("main.go", optsExclude, profile))
+		assert.False(t, shouldIncludeFile("main_test.go", optsExclude, profile))
+	})
+
 	t.Run("truncateString works correctly", func(t *testing.T) {
 		assert.Equal(t, "hello", truncateString("hello", 10))
 		assert.Equal(t, "hello...", truncateString("hello world", 8))

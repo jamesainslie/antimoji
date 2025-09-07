@@ -390,7 +390,6 @@ func TestGenerateAntimojiConfig(t *testing.T) {
 				// Check that file contains valid YAML
 				data, err := os.ReadFile(configPath)
 				require.NoError(t, err)
-				assert.Contains(t, string(data), "version:")
 				assert.Contains(t, string(data), "profiles:")
 			}
 		})
@@ -544,7 +543,6 @@ func TestSetupLintIntegration(t *testing.T) {
 			data, err := os.ReadFile(antimojiConfig)
 			require.NoError(t, err)
 			antimojiContent := string(data)
-			assert.Contains(t, antimojiContent, "version:")
 			assert.Contains(t, antimojiContent, "profiles:")
 
 			// Verify pre-commit config content
