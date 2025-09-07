@@ -2,14 +2,15 @@
 package cli
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/antimoji/antimoji/internal/config"
 	"github.com/antimoji/antimoji/internal/core/allowlist"
 	"github.com/antimoji/antimoji/internal/core/detector"
 	"github.com/antimoji/antimoji/internal/core/processor"
+	"github.com/antimoji/antimoji/internal/observability/logging"
 	"github.com/spf13/cobra"
 )
 
@@ -93,6 +94,8 @@ func runClean(_ *cobra.Command, args []string, opts *CleanOptions) error {
 	}
 	profile := profileResult.Unwrap()
 
+	ctx := context.Background()
+
 	// Create allowlist if configured
 	var emojiAllowlist *allowlist.Allowlist
 	if opts.RespectAllowlist && len(profile.EmojiAllowlist) > 0 {
@@ -102,9 +105,9 @@ func runClean(_ *cobra.Command, args []string, opts *CleanOptions) error {
 		}
 		emojiAllowlist = allowlistResult.Unwrap()
 
-		if verbose {
-			fmt.Fprintf(os.Stderr, "Using allowlist with %d patterns\n", emojiAllowlist.Size())
-		}
+		logging.Info(ctx, "Allowlist configured for cleaning",
+			"patterns_count", emojiAllowlist.Size(),
+			"operation", "clean")
 	}
 
 	// Discover files to process (reuse scan logic)
@@ -116,9 +119,9 @@ func runClean(_ *cobra.Command, args []string, opts *CleanOptions) error {
 		return fmt.Errorf("failed to discover files: %w", err)
 	}
 
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Found %d files to clean\n", len(filePaths))
-	}
+	logging.Info(ctx, "File discovery completed for cleaning",
+		"files_found", len(filePaths),
+		"operation", "clean")
 
 	// Create modification configuration
 	modifyConfig := processor.ModifyConfig{
