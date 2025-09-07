@@ -179,7 +179,7 @@ func TestGeneratePreCommitConfigForMode(t *testing.T) {
 				"zero-tolerance",
 				"--threshold=0",
 				"--quiet",
-				"Strict emoji linting",
+				"Auto-clean Emojis",
 				"--allow-multiple-documents",
 			},
 		},
@@ -189,7 +189,7 @@ func TestGeneratePreCommitConfigForMode(t *testing.T) {
 				"allow-list",
 				"--threshold=5",
 				"--quiet",
-				"Allow-list emoji linting",
+				"Auto-clean Non-allowed Emojis",
 				"--allow-multiple-documents",
 			},
 		},
@@ -199,7 +199,7 @@ func TestGeneratePreCommitConfigForMode(t *testing.T) {
 				"permissive",
 				"--threshold=20",
 				"--quiet",
-				"Permissive emoji linting",
+				"Permissive Emoji Check",
 				"--allow-multiple-documents",
 			},
 		},
@@ -217,7 +217,13 @@ func TestGeneratePreCommitConfigForMode(t *testing.T) {
 
 			// Should contain standard structure
 			assert.Contains(t, config, "repos:")
-			assert.Contains(t, config, "antimoji-clean")
+			
+			// Different modes have different hook patterns
+			if tt.mode == PermissiveMode {
+				assert.Contains(t, config, "antimoji-check")
+			} else {
+				assert.Contains(t, config, "antimoji-clean")
+			}
 
 			// Build hook should only be present for local builds
 			if strings.Contains(config, "bin/antimoji") {
@@ -549,7 +555,12 @@ func TestSetupLintIntegration(t *testing.T) {
 			data, err = os.ReadFile(preCommitConfig)
 			require.NoError(t, err)
 			preCommitContent := string(data)
-			assert.Contains(t, preCommitContent, "antimoji-clean")
+			// Different modes have different hook patterns
+			if tt.mode == PermissiveMode {
+				assert.Contains(t, preCommitContent, "antimoji-check")
+			} else {
+				assert.Contains(t, preCommitContent, "antimoji-clean")
+			}
 			assert.Contains(t, preCommitContent, string(mode))
 
 			// Verify golangci config content

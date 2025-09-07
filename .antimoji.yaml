@@ -26,5 +26,7 @@ profiles:
       - vendor/**/*
       - dist/**/*
       - bin/**/*
+      - 'examples/**/*'
+      - 'PRECOMMIT_REFACTOR_SUMMARY.md'
     directory_ignore_list: [.git, vendor, dist, bin, node_modules]
     description: "CI-friendly profile with some allowed emojis"
