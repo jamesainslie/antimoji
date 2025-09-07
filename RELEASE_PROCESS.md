@@ -16,7 +16,7 @@ Antimoji uses an automated release process powered by GitHub Actions and GoRelea
 
 ### 1. Homebrew Formula Placement
 
-**⚠️ CRITICAL**: The GoReleaser configuration MUST include `folder: Formula` in the brews section.
+**⚠️ CRITICAL**: The GoReleaser configuration MUST include `directory: Formula` in the brews section.
 
 ```yaml
 brews:
@@ -26,12 +26,12 @@ brews:
       name: homebrew-antimoji
       token: "{{ .Env.PAT_TOKEN }}"
       branch: main
-    folder: Formula  # ← CRITICAL: Without this, formula files go to repository root
+    directory: Formula  # ← CRITICAL: Without this, formula files go to repository root
 ```
 
 **Why this matters:**
 - Homebrew expects formula files in the `Formula/` directory
-- Without `folder: Formula`, GoReleaser places `.rb` files at the repository root
+- Without `directory: Formula`, GoReleaser places `.rb` files at the repository root
 - This causes silent failures where the formula appears to update but Homebrew can't find it
 - Users will be unable to upgrade via `brew upgrade antimoji`
 
@@ -115,11 +115,11 @@ repository:
 - Users report they can't upgrade to new version
 
 **Root Cause:**
-- Missing `folder: Formula` in GoReleaser config
+- Missing `directory: Formula` in GoReleaser config
 - Formula file placed at repository root instead of `Formula/` directory
 
 **Solution:**
-1. Add `folder: Formula` to `.goreleaser.yaml` brews configuration
+1. Add `directory: Formula` to `.goreleaser.yaml` brews configuration
 2. Manually move incorrectly placed formula file from root to `Formula/` directory
 3. Delete any duplicate files at repository root
 
