@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.13] - 2025-09-07
+
+### Fixed
+- **File Inclusion Logic**: Fixed `shouldIncludeFile()` to include all files when `IncludePatterns` is empty, resolving restrictive default behavior that excluded files like `.txt`, `.yaml`, `.json`
+- **Generate Command Consistency**: Unified file discovery logic between `scan` and `generate` commands, ensuring consistent behavior across all antimoji commands
+- **Default Configuration**: Updated default config to use empty include patterns, enabling processing of all file types by default
+
+### Removed
+- **Config Version Field**: Eliminated useless version field from configuration structures that provided zero functional value and was never used by runtime code
+- **Duplicate Code**: Removed `discoverAllFiles()` function and hardcoded extension lists in favor of consistent file discovery logic
+
+### Improved
+- **Test Coverage**: Added comprehensive file inclusion tests with 13 different scenarios
+- **Code Cleanliness**: Removed 50+ lines of ceremonial code that served no functional purpose
+- **Documentation**: Enhanced code comments explaining file inclusion behavior
+
 ## [v0.9.7] - 2025-09-06
 
 ### Fixed
