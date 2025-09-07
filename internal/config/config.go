@@ -145,10 +145,10 @@ func DefaultConfig() Config {
 				// Emoji detection
 				UnicodeEmojis:  true,
 				TextEmoticons:  true,
-				CustomPatterns: []string{":smile:", ":frown:", ":thumbs_up:", ":heart:"},
+				CustomPatterns: []string{"", "", "", ""},
 
 				// Allowlist and ignore functionality
-				EmojiAllowlist: []string{"✅", "❌", "⚠️"},
+				EmojiAllowlist: []string{"", "", ""},
 				FileIgnoreList: []string{
 					"*.min.js", "*.min.css", "vendor/**/*", "node_modules/**/*",
 					".git/**/*", "**/*.generated.*",
@@ -161,8 +161,8 @@ func DefaultConfig() Config {
 				Replacement:        "",
 				PreserveWhitespace: true,
 
-				// File filters
-				IncludePatterns: []string{"*.go", "*.md", "*.js", "*.py", "*.ts", "*.jsx", "*.tsx"},
+				// File filters - empty include patterns means include all files
+				IncludePatterns: []string{}, // Empty = include all files (unless excluded)
 				ExcludePatterns: []string{"vendor/*", "node_modules/*", ".git/*"},
 
 				// CI/CD and linting
