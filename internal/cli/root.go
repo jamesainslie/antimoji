@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/antimoji/antimoji/internal/observability/logging"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -17,6 +18,8 @@ var (
 	verbose     bool
 	quiet       bool
 	dryRun      bool
+	logLevel    string
+	logFormat   string
 
 	// Build information (will be set by main package)
 	buildVersion   = "0.9.7"
@@ -47,9 +50,11 @@ Built with Go using functional programming principles, Antimoji provides:
 	// Add global persistent flags
 	cmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file path")
 	cmd.PersistentFlags().StringVar(&profileName, "profile", "default", "configuration profile")
-	cmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
-	cmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "quiet mode")
+	cmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output (deprecated, use --log-level=info)")
+	cmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "quiet mode (deprecated, use --log-level=silent)")
 	cmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "show what would be changed without modifying files")
+	cmd.PersistentFlags().StringVar(&logLevel, "log-level", "silent", "log level (silent, debug, info, warn, error)")
+	cmd.PersistentFlags().StringVar(&logFormat, "log-format", "json", "log format (json, text)")
 
 	// Add subcommands
 	cmd.AddCommand(NewScanCommand())
@@ -58,8 +63,8 @@ Built with Go using functional programming principles, Antimoji provides:
 	cmd.AddCommand(NewSetupLintCommand())
 	cmd.AddCommand(NewVersionCommand())
 
-	// Set up configuration
-	cobra.OnInitialize(initConfig)
+	// Set up configuration and logging
+	cobra.OnInitialize(initConfig, initLogging)
 
 	return cmd
 }
@@ -109,5 +114,61 @@ func initConfig() {
 	// Read config file
 	if err := viper.ReadInConfig(); err == nil && verbose {
 		fmt.Fprintf(os.Stderr, "Using config file: %s\n", viper.ConfigFileUsed())
+	}
+}
+
+// initLogging initializes the global logger based on CLI flags and configuration.
+func initLogging() {
+	// Handle legacy flags for backward compatibility
+	effectiveLogLevel := logLevel
+	effectiveLogFormat := logFormat
+
+	// Override with legacy flags if they are set
+	if quiet {
+		effectiveLogLevel = "silent"
+	} else if verbose && effectiveLogLevel == "silent" {
+		effectiveLogLevel = "info"
+	}
+
+	// Convert string values to logging types
+	var level logging.LogLevel
+	switch effectiveLogLevel {
+	case "debug":
+		level = logging.LevelDebug
+	case "info":
+		level = logging.LevelInfo
+	case "warn":
+		level = logging.LevelWarn
+	case "error":
+		level = logging.LevelError
+	case "silent":
+		level = logging.LevelSilent
+	default:
+		level = logging.LevelSilent
+	}
+
+	var format logging.LogFormat
+	switch effectiveLogFormat {
+	case "json":
+		format = logging.FormatJSON
+	case "text":
+		format = logging.FormatText
+	default:
+		format = logging.FormatJSON
+	}
+
+	// Create logging configuration
+	config := &logging.Config{
+		Level:          level,
+		Format:         format,
+		Output:         os.Stderr,
+		ServiceName:    "antimoji",
+		ServiceVersion: buildVersion,
+	}
+
+	// Initialize global logger
+	if err := logging.InitGlobalLogger(config); err != nil {
+		// Fallback to stderr if logger initialization fails
+		fmt.Fprintf(os.Stderr, "Warning: Failed to initialize logger: %v\n", err)
 	}
 }
