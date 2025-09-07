@@ -58,7 +58,7 @@ func TestGenerateConfigForMode(t *testing.T) {
 		{
 			mode:                ZeroToleranceMode,
 			allowedEmojis:       []string{},
-			expectedProfile:     "ci-lint",
+			expectedProfile:     "zero-tolerance",
 			expectedThreshold:   0,
 			expectedFailOnFound: true,
 		},
@@ -115,10 +115,10 @@ func TestGenerateConfigForMode(t *testing.T) {
 func TestGenerateZeroToleranceConfig(t *testing.T) {
 	baseConfig := generateConfigForMode(ZeroToleranceMode, &SetupLintOptions{})
 
-	require.Contains(t, baseConfig.Profiles, "ci-lint")
 	require.Contains(t, baseConfig.Profiles, "zero-tolerance")
+	require.Contains(t, baseConfig.Profiles, "zero")
 
-	profile := baseConfig.Profiles["ci-lint"]
+	profile := baseConfig.Profiles["zero-tolerance"]
 
 	// Should have empty allowlist
 	assert.Empty(t, profile.EmojiAllowlist)
@@ -217,7 +217,7 @@ func TestGeneratePreCommitConfigForMode(t *testing.T) {
 
 			// Should contain standard structure
 			assert.Contains(t, config, "repos:")
-			assert.Contains(t, config, "antimoji-lint")
+			assert.Contains(t, config, "antimoji-clean")
 
 			// Build hook should only be present for local builds
 			if strings.Contains(config, "bin/antimoji") {
@@ -549,7 +549,7 @@ func TestSetupLintIntegration(t *testing.T) {
 			data, err = os.ReadFile(preCommitConfig)
 			require.NoError(t, err)
 			preCommitContent := string(data)
-			assert.Contains(t, preCommitContent, "antimoji-lint")
+			assert.Contains(t, preCommitContent, "antimoji-clean")
 			assert.Contains(t, preCommitContent, string(mode))
 
 			// Verify golangci config content

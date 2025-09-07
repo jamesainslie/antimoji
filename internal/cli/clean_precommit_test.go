@@ -19,7 +19,7 @@ func TestPreCommitZeroToleranceIntegration(t *testing.T) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "antimoji-precommit-test-")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create test files with emojis
 	testFiles := map[string]string{
@@ -28,12 +28,10 @@ func TestPreCommitZeroToleranceIntegration(t *testing.T) {
 		"test3.txt": "Clean this ✅ but keep allowed ones ❌",
 	}
 
-	var filePaths []string
 	for filename, content := range testFiles {
 		filePath := filepath.Join(tempDir, filename)
 		err := os.WriteFile(filePath, []byte(content), 0644)
 		require.NoError(t, err)
-		filePaths = append(filePaths, filePath)
 	}
 
 	// Create zero-tolerance profile
