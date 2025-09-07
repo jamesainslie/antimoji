@@ -72,6 +72,9 @@ jobs:
         args: release --clean
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # CRITICAL: PAT_TOKEN is required for Homebrew formula updates
+        # This token must have 'repo' and 'public_repo' permissions
+        # Without this, Homebrew formula updates will silently fail
         PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
 
     - name: Upload release artifacts
@@ -93,12 +96,17 @@ jobs:
         echo "### 🚀 Distribution Channels" >> $GITHUB_STEP_SUMMARY
         echo "- GitHub Releases" >> $GITHUB_STEP_SUMMARY
         echo "- Docker Hub (ghcr.io)" >> $GITHUB_STEP_SUMMARY
-        echo "- Homebrew Tap" >> $GITHUB_STEP_SUMMARY
+        echo "- Homebrew Tap (⚠️ Verify formula updated in Formula/ directory)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### ✅ Quality Assurance" >> $GITHUB_STEP_SUMMARY
         echo "- All tests passed" >> $GITHUB_STEP_SUMMARY
         echo "- Security scan completed" >> $GITHUB_STEP_SUMMARY
         echo "- Cross-platform builds verified" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔍 Post-Release Verification" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Verify Homebrew formula updated at: https://github.com/jamesainslie/homebrew-antimoji/blob/main/Formula/antimoji.rb" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Test upgrade: \`brew upgrade antimoji\`" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Verify version: \`antimoji --version\`" >> $GITHUB_STEP_SUMMARY
 
   docker:
     name: Build and Push Docker Images
