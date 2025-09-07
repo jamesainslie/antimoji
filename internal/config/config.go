@@ -3,19 +3,13 @@ package config
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/antimoji/antimoji/internal/types"
 	"github.com/spf13/viper"
 )
 
-// CurrentConfigVersion represents the current configuration schema version.
-// This should be updated when the configuration format changes.
-const CurrentConfigVersion = "0.9.0"
-
 // Config represents the complete application configuration.
 type Config struct {
-	Version  string             `yaml:"version" json:"version"`
 	Profiles map[string]Profile `yaml:"profiles" json:"profiles"`
 }
 
@@ -71,7 +65,6 @@ func LoadConfig(configPath string) types.Result[Config] {
 	}
 
 	config := Config{
-		Version:  v.GetString("version"),
 		Profiles: make(map[string]Profile),
 	}
 
@@ -138,7 +131,6 @@ func loadProfile(v *viper.Viper, profileName string) (Profile, error) {
 // DefaultConfig returns the default configuration.
 func DefaultConfig() Config {
 	return Config{
-		Version: CurrentConfigVersion,
 		Profiles: map[string]Profile{
 			"default": {
 				// File processing
@@ -204,12 +196,6 @@ func GetProfile(config Config, profileName string) types.Result[Profile] {
 
 // ValidateConfig validates the configuration for correctness.
 func ValidateConfig(config Config) types.Result[Config] {
-	// Validate version format (semantic versioning)
-	versionRegex := regexp.MustCompile(`^v?\d+\.\d+\.\d+(-[a-zA-Z0-9]+)?(\+[a-zA-Z0-9]+)?$`)
-	if config.Version != "" && !versionRegex.MatchString(config.Version) {
-		return types.Err[Config](fmt.Errorf("invalid version format: %s", config.Version))
-	}
-
 	// Validate each profile
 	for name, profile := range config.Profiles {
 		if err := validateProfile(name, profile); err != nil {

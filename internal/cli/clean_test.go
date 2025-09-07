@@ -118,8 +118,7 @@ func TestCleanCommand_Integration(t *testing.T) {
 
 	t.Run("respects allowlist configuration", func(t *testing.T) {
 		// Create config with allowlist
-		configContent := `version: "0.1.0"
-profiles:
+		configContent := `profiles:
   default:
     emoji_allowlist:
       - "✅"

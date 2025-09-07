@@ -58,7 +58,6 @@ type UsageStatistics struct {
 
 // AllowlistConfig represents the generated allowlist configuration.
 type AllowlistConfig struct {
-	Version  string             `yaml:"version"`
 	Profiles map[string]Profile `yaml:"profiles"`
 }
 
@@ -325,7 +324,6 @@ func generateAllowlistConfig(analysis *EmojiUsageAnalysis, opts *GenerateOptions
 	}
 
 	config := &AllowlistConfig{
-		Version: config.CurrentConfigVersion,
 		Profiles: map[string]Profile{
 			profileName: profile,
 		},

@@ -14,8 +14,7 @@ func TestLoadConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	t.Run("loads valid YAML config", func(t *testing.T) {
-		configContent := `version: "0.9.0"
-profiles:
+		configContent := `profiles:
   default:
     recursive: true
     unicode_emojis: true
@@ -36,7 +35,6 @@ profiles:
 		assert.True(t, result.IsOk())
 
 		config := result.Unwrap()
-		assert.Equal(t, CurrentConfigVersion, config.Version)
 		assert.Contains(t, config.Profiles, "default")
 
 		profile := config.Profiles["default"]
@@ -65,7 +63,6 @@ profiles:
 
 	t.Run("handles invalid YAML", func(t *testing.T) {
 		configContent := `
-version: "0.9.0"
 profiles:
   default:
     recursive: true
@@ -88,7 +85,7 @@ profiles:
 		assert.True(t, result.IsOk())
 
 		config := result.Unwrap()
-		assert.Empty(t, config.Version)
+		// Empty config should have empty profiles
 		assert.Empty(t, config.Profiles)
 	})
 }
@@ -97,7 +94,7 @@ func TestDefaultConfig(t *testing.T) {
 	t.Run("returns sensible defaults", func(t *testing.T) {
 		config := DefaultConfig()
 
-		assert.Equal(t, CurrentConfigVersion, config.Version)
+		// Default config should have default profile
 		assert.Contains(t, config.Profiles, "default")
 
 		profile := config.Profiles["default"]
@@ -162,14 +159,7 @@ func TestValidateConfig(t *testing.T) {
 		assert.True(t, result.IsOk())
 	})
 
-	t.Run("rejects invalid version format", func(t *testing.T) {
-		config := DefaultConfig()
-		config.Version = "invalid-version"
-
-		result := ValidateConfig(config)
-		assert.True(t, result.IsErr())
-		assert.Contains(t, result.Error().Error(), "invalid version")
-	})
+	// Version validation removed - no longer needed
 
 	t.Run("rejects negative buffer size", func(t *testing.T) {
 		config := DefaultConfig()
@@ -345,7 +335,7 @@ profiles:
 	result := LoadConfig(tmpFile.Name())
 	if result.IsOk() {
 		config := result.Unwrap()
-		fmt.Println("Config version:", config.Version)
+		fmt.Println("Config loaded with profiles:", len(config.Profiles))
 	}
-	// Output: Config version: 0.9.0
+	// Output: Config loaded with profiles: 1
 }
