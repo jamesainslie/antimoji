@@ -110,7 +110,7 @@ release:
     #### Package Managers
     ```bash
     # macOS (Homebrew)
-    brew install antimoji/tap/antimoji
+    brew install jamesainslie/antimoji/antimoji
 
     # Go Install
     go install github.com/jamesainslie/antimoji/cmd/antimoji@{{ .Version }}
