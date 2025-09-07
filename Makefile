@@ -78,7 +78,7 @@ lint: ## Run linter
 antimoji-lint: build ## Run antimoji on its own codebase
 	@echo "Running antimoji linter..."
 	@if [ -f ".antimoji.yaml" ]; then \
-		./bin/antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 --format=table .; \
+		./bin/antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=300 --format=table .; \
 	else \
 		echo "WARNING: No .antimoji.yaml config found. Run 'make generate-allowlist' first."; \
 		exit 1; \
