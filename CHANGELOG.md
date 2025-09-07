@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.14] - 2025-01-27
+
+### Fixed
+- Fixed ERROR status when using configuration files - files now process correctly with custom configs
+- Resolved issue where minimal config files caused `MaxFileSize: 0` and `BufferSize: 0`, breaking file processing
+- Added sensible defaults for processing configuration (100MB max file size, 64KB buffer)
+- Enabled emoji detection by default when not explicitly specified in config files
+- Fixed zero-tolerance emoji policies and CI/CD linting with custom configurations
+
 ## [v0.9.13] - 2025-09-07
 
 ### Fixed
