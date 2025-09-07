@@ -147,7 +147,6 @@ brews:
       name: homebrew-antimoji
       token: "{{ .Env.PAT_TOKEN }}"
       branch: main
-    folder: Formula
     homepage: https://github.com/jamesainslie/antimoji
     description: High-performance emoji detection and removal CLI tool
     license: MIT
