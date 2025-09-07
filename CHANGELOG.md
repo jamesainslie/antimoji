@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v0.9.14] - 2025-01-27
+## [v0.9.14] - 2025-07-09
 
 ### Fixed
 - Fixed ERROR status when using configuration files - files now process correctly with custom configs
