@@ -1,0 +1,52 @@
+# Zero-tolerance pre-commit configuration for Antimoji
+# This configuration enforces strict no-emoji policy across all files
+
+repos:
+  - repo: local
+    hooks:
+      # Step 1: Clean all emojis (zero-tolerance)
+      - id: antimoji-clean
+        name: "Auto-clean Emojis (zero-tolerance)"
+        entry: antimoji
+        args: [clean, --config=.antimoji.yaml, --profile=zero, --in-place, --quiet]
+        language: system
+        types: [text]
+        exclude: |
+          (?x)^(
+            vendor/.*|
+            \.git/.*|
+            bin/.*|
+            dist/.*|
+            node_modules/.*|
+            \.antimoji\.yaml
+          )$
+        pass_filenames: true
+        require_serial: true
+
+      # Step 2: Verify no emojis remain (zero-tolerance)
+      - id: antimoji-verify
+        name: "Zero-Tolerance Emoji Verification"
+        entry: antimoji
+        args: [scan, --config=.antimoji.yaml, --profile=zero, --threshold=0, --quiet]
+        language: system
+        types: [text]
+        exclude: |
+          (?x)^(
+            vendor/.*|
+            \.git/.*|
+            bin/.*|
+            dist/.*|
+            node_modules/.*|
+            \.antimoji\.yaml
+          )$
+        pass_filenames: true
+        require_serial: true
+
+# Required .antimoji.yaml configuration:
+# version: 0.5.0
+# profiles:
+#   zero:
+#     emoji_allowlist: []
+#     file_ignore_list: []
+#     directory_ignore_list: [.git, vendor, dist, bin, node_modules]
+#     description: "Strict zero-tolerance profile - no emojis anywhere"
