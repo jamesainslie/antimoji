@@ -9,6 +9,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+// CurrentConfigVersion represents the current configuration schema version.
+// This should be updated when the configuration format changes.
+const CurrentConfigVersion = "0.9.0"
+
 // Config represents the complete application configuration.
 type Config struct {
 	Version  string             `yaml:"version" json:"version"`
@@ -134,7 +138,7 @@ func loadProfile(v *viper.Viper, profileName string) (Profile, error) {
 // DefaultConfig returns the default configuration.
 func DefaultConfig() Config {
 	return Config{
-		Version: "0.1.0",
+		Version: CurrentConfigVersion,
 		Profiles: map[string]Profile{
 			"default": {
 				// File processing
