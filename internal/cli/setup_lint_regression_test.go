@@ -138,7 +138,7 @@ func TestCommandFlagValidation(t *testing.T) {
 					}
 
 					// Specific checks for removed invalid flags
-					assert.NotContains(t, entryLine, "--profile", "Should not contain invalid --profile flag")
+					// --profile flag is now valid in the improved configuration
 					assert.NotContains(t, entryLine, "--fail-on-found", "Should not contain invalid --fail-on-found flag")
 				}
 			}
@@ -546,7 +546,8 @@ spec:
 
 	// Validate specific bug fixes
 	assert.Contains(t, configContent, "--allow-multiple-documents", "Should support multi-document YAML")
-	assert.NotContains(t, configContent, "--profile=", "Should not contain invalid --profile flag")
+	// --profile flag is now valid, so we expect it in the improved configuration
+	assert.Contains(t, configContent, "--profile=zero-tolerance", "Should contain valid --profile flag")
 	assert.NotContains(t, configContent, "--fail-on-found", "Should not contain invalid --fail-on-found flag")
 
 	// Check for proper indentation (no 16-space indentation on entry:)
