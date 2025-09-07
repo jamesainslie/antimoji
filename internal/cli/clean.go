@@ -21,6 +21,7 @@ type CleanOptions struct {
 	Replace          string
 	InPlace          bool
 	RespectAllowlist bool
+	IgnoreAllowlist  bool
 	Stats            bool
 	Benchmark        bool
 }
@@ -56,7 +57,8 @@ Examples:
 	cmd.Flags().BoolVar(&opts.Backup, "backup", false, "create backup files")
 	cmd.Flags().StringVar(&opts.Replace, "replace", "", "replacement text for emojis")
 	cmd.Flags().BoolVarP(&opts.InPlace, "in-place", "i", false, "modify files in place")
-	cmd.Flags().BoolVar(&opts.RespectAllowlist, "respect-allowlist", true, "respect configured emoji allowlist during cleaning")
+	cmd.Flags().BoolVar(&opts.RespectAllowlist, "respect-allowlist", true, "respect configured emoji allowlist during cleaning (deprecated, use --ignore-allowlist)")
+	cmd.Flags().BoolVar(&opts.IgnoreAllowlist, "ignore-allowlist", false, "ignore configured emoji allowlist (overrides --respect-allowlist)")
 	cmd.Flags().BoolVar(&opts.Stats, "stats", false, "show performance statistics")
 	cmd.Flags().BoolVar(&opts.Benchmark, "benchmark", false, "run in benchmark mode with detailed metrics")
 
@@ -96,19 +98,17 @@ func runClean(_ *cobra.Command, args []string, opts *CleanOptions) error {
 
 	ctx := context.Background()
 
-	// Create allowlist if configured
-	var emojiAllowlist *allowlist.Allowlist
-	if opts.RespectAllowlist && len(profile.EmojiAllowlist) > 0 {
-		allowlistResult := allowlist.NewAllowlist(profile.EmojiAllowlist)
-		if allowlistResult.IsErr() {
-			return fmt.Errorf("failed to create allowlist: %w", allowlistResult.Error())
-		}
-		emojiAllowlist = allowlistResult.Unwrap()
-
-		logging.Info(ctx, "Allowlist configured for cleaning",
-			"patterns_count", emojiAllowlist.Size(),
-			"operation", "clean")
+	// Create allowlist using unified processing logic
+	allowlistOpts := allowlist.ProcessingOptions{
+		IgnoreAllowlist:  opts.IgnoreAllowlist,
+		RespectAllowlist: opts.RespectAllowlist,
+		Operation:        "clean",
 	}
+	emojiAllowlist, err := allowlist.CreateAllowlistForProcessing(ctx, profile, allowlistOpts)
+	if err != nil {
+		return fmt.Errorf("failed to create allowlist: %w", err)
+	}
+	shouldUseAllowlist := allowlist.ShouldUseAllowlist(allowlistOpts, profile)
 
 	// Discover files to process (reuse scan logic)
 	scanOpts := &ScanOptions{
@@ -124,10 +124,11 @@ func runClean(_ *cobra.Command, args []string, opts *CleanOptions) error {
 		"operation", "clean")
 
 	// Create modification configuration
+	// Use the resolved allowlist behavior (ignore-allowlist takes precedence)
 	modifyConfig := processor.ModifyConfig{
 		Replacement:         opts.Replace,
 		CreateBackup:        opts.Backup,
-		RespectAllowlist:    opts.RespectAllowlist,
+		RespectAllowlist:    shouldUseAllowlist,
 		PreservePermissions: true,
 		DryRun:              dryRun,
 	}

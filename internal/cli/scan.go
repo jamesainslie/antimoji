@@ -120,18 +120,15 @@ func runScan(cmd *cobra.Command, args []string, opts *ScanOptions) error {
 	// Create emoji patterns
 	patterns := detector.DefaultEmojiPatterns()
 
-	// Create allowlist if configured and not ignored
-	var emojiAllowlist *allowlist.Allowlist
-	if !opts.IgnoreAllowlist && len(profile.EmojiAllowlist) > 0 {
-		allowlistResult := allowlist.NewAllowlist(profile.EmojiAllowlist)
-		if allowlistResult.IsErr() {
-			return fmt.Errorf("failed to create allowlist: %w", allowlistResult.Error())
-		}
-		emojiAllowlist = allowlistResult.Unwrap()
-
-		logging.Info(ctx, "Allowlist configured",
-			"patterns_count", emojiAllowlist.Size(),
-			"operation", "scan")
+	// Create allowlist using unified processing logic
+	allowlistOpts := allowlist.ProcessingOptions{
+		IgnoreAllowlist:  opts.IgnoreAllowlist,
+		RespectAllowlist: true, // scan always respects allowlist by default unless ignored
+		Operation:        "scan",
+	}
+	emojiAllowlist, err := allowlist.CreateAllowlistForProcessing(ctx, profile, allowlistOpts)
+	if err != nil {
+		return fmt.Errorf("failed to create allowlist: %w", err)
 	}
 
 	// Process files (use concurrent processing if multiple files and workers configured)
