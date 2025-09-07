@@ -556,7 +556,7 @@ func TestSetupLintIntegration(t *testing.T) {
 			require.NoError(t, err)
 			preCommitContent := string(data)
 			// Different modes have different hook patterns
-			if tt.mode == PermissiveMode {
+			if mode == PermissiveMode {
 				assert.Contains(t, preCommitContent, "antimoji-check")
 			} else {
 				assert.Contains(t, preCommitContent, "antimoji-clean")
