@@ -110,14 +110,12 @@ func TestDefaultConfig(t *testing.T) {
 		assert.True(t, profile.BufferSize > 0)
 	})
 
-	t.Run("includes expected file patterns", func(t *testing.T) {
+	t.Run("has empty include patterns by default", func(t *testing.T) {
 		config := DefaultConfig()
 		profile := config.Profiles["default"]
 
-		expectedIncludes := []string{"*.go", "*.md", "*.js", "*.py", "*.ts"}
-		for _, pattern := range expectedIncludes {
-			assert.Contains(t, profile.IncludePatterns, pattern)
-		}
+		// Empty include patterns means include all files (unless excluded)
+		assert.Empty(t, profile.IncludePatterns, "Default config should have empty include patterns to include all files")
 
 		expectedExcludes := []string{"vendor/*", "node_modules/*", ".git/*"}
 		for _, pattern := range expectedExcludes {
