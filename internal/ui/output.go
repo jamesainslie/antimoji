@@ -108,7 +108,7 @@ func (u *userOutput) Success(ctx context.Context, msg string, args ...interface{
 
 	formatted := fmt.Sprintf(msg, args...)
 	if u.config.EnableColors {
-		fmt.Fprintf(u.config.Writer, "\033[32m✓\033[0m %s\n", formatted)
+		fmt.Fprintf(u.config.Writer, "\033[32m\033[0m %s\n", formatted)
 	} else {
 		fmt.Fprintf(u.config.Writer, "SUCCESS: %s\n", formatted)
 	}
@@ -125,7 +125,7 @@ func (u *userOutput) Warning(ctx context.Context, msg string, args ...interface{
 
 	formatted := fmt.Sprintf(msg, args...)
 	if u.config.EnableColors {
-		fmt.Fprintf(u.config.ErrorWriter, "\033[33m⚠\033[0m %s\n", formatted)
+		fmt.Fprintf(u.config.ErrorWriter, "\033[33m\033[0m %s\n", formatted)
 	} else {
 		fmt.Fprintf(u.config.ErrorWriter, "WARNING: %s\n", formatted)
 	}
@@ -140,7 +140,7 @@ func (u *userOutput) Error(ctx context.Context, msg string, args ...interface{})
 
 	formatted := fmt.Sprintf(msg, args...)
 	if u.config.EnableColors {
-		fmt.Fprintf(u.config.ErrorWriter, "\033[31m✗\033[0m %s\n", formatted)
+		fmt.Fprintf(u.config.ErrorWriter, "\033[31m\033[0m %s\n", formatted)
 	} else {
 		fmt.Fprintf(u.config.ErrorWriter, "ERROR: %s\n", formatted)
 	}
