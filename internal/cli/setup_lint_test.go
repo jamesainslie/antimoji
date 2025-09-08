@@ -461,7 +461,7 @@ func TestUpdatePreCommitConfig(t *testing.T) {
 	}
 }
 
-func TestUpdateGolangCIConfig(t *testing.T) {
+func TestEnsureBasicGolangCIConfig(t *testing.T) {
 	tempDir := t.TempDir()
 
 	tests := []struct {
@@ -506,8 +506,12 @@ func TestUpdateGolangCIConfig(t *testing.T) {
 				require.NoError(t, err)
 				content := string(data)
 
-				assert.Contains(t, content, "antimoji:")
-				assert.Contains(t, content, string(tt.mode))
+				// Test for basic golangci-lint structure (no antimoji linter)
+				assert.Contains(t, content, "version: \"2\"")
+				assert.Contains(t, content, "errcheck")
+				assert.Contains(t, content, "govet")
+				assert.Contains(t, content, "pre-commit hooks")
+				assert.NotContains(t, content, "antimoji:") // Should not contain invalid linter
 			}
 		})
 	}
@@ -568,12 +572,14 @@ func TestSetupLintIntegration(t *testing.T) {
 			}
 			assert.Contains(t, preCommitContent, string(mode))
 
-			// Verify golangci config content
+			// Verify golangci config content (should NOT contain antimoji linter)
 			data, err = os.ReadFile(golangCIConfig)
 			require.NoError(t, err)
 			golangCIContent := string(data)
-			assert.Contains(t, golangCIContent, "antimoji:")
-			assert.Contains(t, golangCIContent, string(mode))
+			assert.Contains(t, golangCIContent, "version: \"2\"")
+			assert.Contains(t, golangCIContent, "errcheck")
+			assert.Contains(t, golangCIContent, "pre-commit hooks")
+			assert.NotContains(t, golangCIContent, "antimoji:") // Should not contain invalid linter
 		})
 	}
 }

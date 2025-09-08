@@ -568,7 +568,8 @@ spec:
 	golangCIContent := string(golangCIData)
 
 	assert.NotContains(t, golangCIContent, "profile:", "GolangCI config should not contain invalid profile field")
-	assert.Contains(t, golangCIContent, "mode: zero-tolerance", "Should contain correct mode")
+	assert.Contains(t, golangCIContent, "pre-commit hooks", "Should contain note about pre-commit integration")
+	assert.NotContains(t, golangCIContent, "antimoji:", "Should not contain invalid antimoji linter")
 }
 
 // Helper function to get valid antimoji scan flags by introspection

@@ -909,64 +909,6 @@ issues:
 	return nil
 }
 
-// mergeAntimojiConfig merges antimoji configuration into existing golangci-lint config.
-func mergeAntimojiConfig(config map[string]interface{}, mode LintMode) error {
-	antimojiCmd := detectAntimojiCommand()
-
-	// Convert relative path to absolute for golangci-lint
-	if antimojiCmd == "bin/antimoji" {
-		antimojiCmd = "./bin/antimoji"
-	}
-
-	// Ensure linters section exists
-	if _, ok := config["linters"]; !ok {
-		config["linters"] = make(map[string]interface{})
-	}
-	linters := config["linters"].(map[string]interface{})
-
-	// Ensure linters.enable array exists
-	if _, ok := linters["enable"]; !ok {
-		linters["enable"] = make([]interface{}, 0)
-	}
-
-	// Add antimoji to linters.enable if not already present
-	enableList := linters["enable"].([]interface{})
-	antimojiExists := false
-	for _, linter := range enableList {
-		if linter == "antimoji" {
-			antimojiExists = true
-			break
-		}
-	}
-	if !antimojiExists {
-		linters["enable"] = append(enableList, "antimoji")
-	}
-
-	// Ensure linters-settings section exists
-	if _, ok := config["linters-settings"]; !ok {
-		config["linters-settings"] = make(map[string]interface{})
-	}
-	lintersSettings := config["linters-settings"].(map[string]interface{})
-
-	// Ensure linters-settings.custom section exists
-	if _, ok := lintersSettings["custom"]; !ok {
-		lintersSettings["custom"] = make(map[string]interface{})
-	}
-	custom := lintersSettings["custom"].(map[string]interface{})
-
-	// Add antimoji custom linter configuration
-	custom["antimoji"] = map[string]interface{}{
-		"path":         antimojiCmd,
-		"description":  "Emoji detection and linting",
-		"original-url": "github.com/antimoji/antimoji",
-		"settings": map[string]interface{}{
-			"config": ".antimoji.yaml",
-			"mode":   string(mode),
-		},
-	}
-
-	return nil
-}
 
 // generateGolangCIConfigForMode creates golangci-lint configuration for antimoji.
 func generateGolangCIConfigForMode(mode LintMode) string {
