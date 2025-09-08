@@ -17,13 +17,6 @@ import (
 	"github.com/antimoji/antimoji/internal/types"
 )
 
-// max returns the larger of two integers (for Go versions without built-in max)
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
 
 // ModifyConfig contains configuration for file modification operations.
 type ModifyConfig struct {

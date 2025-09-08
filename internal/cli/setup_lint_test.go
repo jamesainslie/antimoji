@@ -491,7 +491,7 @@ func TestUpdateGolangCIConfig(t *testing.T) {
 
 			tt.setup()
 
-			err := updateGolangCIConfig(tempDir, tt.mode, tt.opts)
+			err := ensureBasicGolangCIConfig(tempDir, tt.opts)
 
 			if tt.expectErr {
 				require.Error(t, err)
