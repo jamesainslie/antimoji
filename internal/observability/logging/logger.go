@@ -10,6 +10,10 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutlog"
 	"go.opentelemetry.io/otel/log/global"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
+
+	ctxutil "github.com/antimoji/antimoji/internal/observability/context"
 )
 
 // LogLevel represents the available log levels.
@@ -151,7 +155,8 @@ func NewLogger(config *Config) (Logger, error) {
 
 // setupOTELLogProvider configures the OpenTelemetry log provider.
 func setupOTELLogProvider(config *Config) (*sdklog.LoggerProvider, error) {
-	// Create stdout exporter for logs
+	// For CLI applications, we'll use a simpler approach
+	// Create a simple processor that doesn't batch to avoid deadlocks
 	exporter, err := stdoutlog.New(
 		stdoutlog.WithWriter(config.Output),
 	)
@@ -159,12 +164,13 @@ func setupOTELLogProvider(config *Config) (*sdklog.LoggerProvider, error) {
 		return nil, err
 	}
 
-	// Create log processor
-	processor := sdklog.NewBatchProcessor(exporter)
+	// Use simple processor instead of batch processor to avoid deadlocks in CLI
+	processor := sdklog.NewSimpleProcessor(exporter)
 
-	// Create logger provider
+	// Create logger provider with resource information
 	provider := sdklog.NewLoggerProvider(
 		sdklog.WithProcessor(processor),
+		sdklog.WithResource(createResource(config)),
 	)
 
 	// Set as global logger provider
@@ -173,32 +179,62 @@ func setupOTELLogProvider(config *Config) (*sdklog.LoggerProvider, error) {
 	return provider, nil
 }
 
-// Debug logs a debug-level message.
+// createResource creates an OTEL resource with service information.
+func createResource(config *Config) *resource.Resource {
+	return resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceName(config.ServiceName),
+		semconv.ServiceVersion(config.ServiceVersion),
+	)
+}
+
+// Debug logs a debug-level message with context information.
 func (l *otelLogger) Debug(ctx context.Context, msg string, keysAndValues ...any) {
 	if l.IsEnabled(LevelDebug) {
-		l.slogger.DebugContext(ctx, msg, keysAndValues...)
+		// Enhance with context fields for better diagnostics
+		enhancedKV := l.enhanceWithContext(ctx, keysAndValues...)
+		l.slogger.DebugContext(ctx, msg, enhancedKV...)
 	}
 }
 
-// Info logs an info-level message.
+// Info logs an info-level message with context information.
 func (l *otelLogger) Info(ctx context.Context, msg string, keysAndValues ...any) {
 	if l.IsEnabled(LevelInfo) {
-		l.slogger.InfoContext(ctx, msg, keysAndValues...)
+		// Enhance with context fields for better diagnostics
+		enhancedKV := l.enhanceWithContext(ctx, keysAndValues...)
+		l.slogger.InfoContext(ctx, msg, enhancedKV...)
 	}
 }
 
-// Warn logs a warn-level message.
+// Warn logs a warn-level message with context information.
 func (l *otelLogger) Warn(ctx context.Context, msg string, keysAndValues ...any) {
 	if l.IsEnabled(LevelWarn) {
-		l.slogger.WarnContext(ctx, msg, keysAndValues...)
+		// Enhance with context fields for better diagnostics
+		enhancedKV := l.enhanceWithContext(ctx, keysAndValues...)
+		l.slogger.WarnContext(ctx, msg, enhancedKV...)
 	}
 }
 
-// Error logs an error-level message.
+// Error logs an error-level message with context information.
 func (l *otelLogger) Error(ctx context.Context, msg string, keysAndValues ...any) {
 	if l.IsEnabled(LevelError) {
-		l.slogger.ErrorContext(ctx, msg, keysAndValues...)
+		// Enhance with context fields for better diagnostics
+		enhancedKV := l.enhanceWithContext(ctx, keysAndValues...)
+		l.slogger.ErrorContext(ctx, msg, enhancedKV...)
 	}
+}
+
+// enhanceWithContext adds context fields to the key-value pairs for better diagnostics.
+func (l *otelLogger) enhanceWithContext(ctx context.Context, keysAndValues ...any) []any {
+	// Extract context fields
+	contextFields := ctxutil.ExtractContextFields(ctx)
+
+	// Combine context fields with provided key-value pairs
+	enhanced := make([]any, 0, len(contextFields)+len(keysAndValues))
+	enhanced = append(enhanced, contextFields...)
+	enhanced = append(enhanced, keysAndValues...)
+
+	return enhanced
 }
 
 // With returns a logger with the given key-value pairs added to all log entries.

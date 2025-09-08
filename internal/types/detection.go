@@ -5,7 +5,7 @@ import "time"
 
 // EmojiMatch represents a detected emoji in text content.
 type EmojiMatch struct {
-	// Emoji is the actual emoji string (e.g., "😀", "👍🏽")
+	// Emoji is the actual emoji string (e.g., "", "")
 	Emoji string `json:"emoji"`
 
 	// Start is the byte position where the emoji begins
@@ -22,19 +22,22 @@ type EmojiMatch struct {
 
 	// Category describes the type of emoji (Unicode, Emoticon, Custom)
 	Category EmojiCategory `json:"category"`
+
+	// DebugInfo contains debugging information about the detected emoji
+	DebugInfo map[string]interface{} `json:"debug_info,omitempty"`
 }
 
 // EmojiCategory represents the type of emoji detected.
 type EmojiCategory string
 
 const (
-	// CategoryUnicode represents Unicode emoji characters (e.g., 😀, 👍)
+	// CategoryUnicode represents Unicode emoji characters (e.g., , )
 	CategoryUnicode EmojiCategory = "unicode"
 
-	// CategoryEmoticon represents text-based emoticons (e.g., :), :()
+	// CategoryEmoticon represents text-based emoticons (e.g., , )
 	CategoryEmoticon EmojiCategory = "emoticon"
 
-	// CategoryCustom represents custom emoji patterns (e.g., :smile:, :thumbs_up:)
+	// CategoryCustom represents custom emoji patterns (e.g., , )
 	CategoryCustom EmojiCategory = "custom"
 )
 
@@ -57,6 +60,15 @@ type DetectionResult struct {
 
 	// Success indicates if detection completed successfully
 	Success bool `json:"success"`
+
+	// ContentSize is the size of the content analyzed in bytes
+	ContentSize int `json:"content_size,omitempty"`
+
+	// StartTime is when the detection process started
+	StartTime time.Time `json:"start_time,omitempty"`
+
+	// PatternsApplied is the number of patterns applied during detection
+	PatternsApplied int `json:"patterns_applied,omitempty"`
 }
 
 // Reset clears the DetectionResult for reuse.
