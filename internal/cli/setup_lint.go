@@ -29,6 +29,7 @@ type SetupLintOptions struct {
 	SkipPreCommitHook bool
 	Repair            bool
 	Review            bool
+	Validate          bool
 }
 
 // LintMode represents the different linting modes available.
@@ -94,6 +95,7 @@ Examples:
 	cmd.Flags().BoolVar(&opts.SkipPreCommitHook, "skip-precommit", false, "skip pre-commit hook installation")
 	cmd.Flags().BoolVar(&opts.Repair, "repair", false, "repair missing .antimoji.yaml and .pre-commit-config.yaml antimoji configuration")
 	cmd.Flags().BoolVar(&opts.Review, "review", false, "review existing configuration and explain how it will apply")
+	cmd.Flags().BoolVar(&opts.Validate, "validate", false, "validate existing configuration and suggest improvements")
 
 	return cmd
 }
@@ -117,6 +119,11 @@ func runSetupLint(cmd *cobra.Command, args []string, opts *SetupLintOptions) err
 	// Handle review mode
 	if opts.Review {
 		return reviewConfiguration(targetDir, opts)
+	}
+	
+	// Handle validation mode
+	if opts.Validate {
+		return validateConfigurationFile(targetDir, opts)
 	}
 
 	// Validate linting mode
@@ -1471,6 +1478,50 @@ Usage Examples:
 	}).Parse(reviewTemplate))
 
 	return tmpl.Execute(os.Stdout, review)
+}
+
+// validateConfigurationFile validates existing configuration and provides suggestions.
+func validateConfigurationFile(targetDir string, opts *SetupLintOptions) error {
+	if !quiet {
+		fmt.Printf("Antimoji Configuration Validation\n")
+		fmt.Printf("==================================\n\n")
+	}
+
+	// Check for .antimoji.yaml
+	configPath := filepath.Join(targetDir, ".antimoji.yaml")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		fmt.Printf("No antimoji configuration found at %s\n", configPath)
+		fmt.Printf("Run 'antimoji setup-lint --mode=<mode>' to create configuration.\n")
+		return nil
+	}
+
+	// Validate the configuration file
+	validationResult := config.ValidateConfigFile(configPath)
+	
+	// Display results
+	fmt.Printf("Configuration File: %s\n", configPath)
+	fmt.Printf("Status: %s\n\n", validationResult.Summary.String())
+	
+	if len(validationResult.Issues) > 0 {
+		fmt.Printf("Issues Found:\n")
+		for _, issue := range validationResult.Issues {
+			fmt.Printf("  %s\n\n", issue.String())
+		}
+	} else {
+		fmt.Printf("No issues found. Configuration is valid!\n")
+	}
+	
+	// Show suggestions if available
+	if validationResult.Summary.Infos > 0 {
+		fmt.Printf("Suggestions for improvement:\n")
+		for _, issue := range validationResult.Issues {
+			if issue.Level == config.ValidationLevelInfo {
+				fmt.Printf("  - %s\n", issue.Message)
+			}
+		}
+	}
+
+	return nil
 }
 
 // validateConfiguration validates the generated pre-commit configuration.
