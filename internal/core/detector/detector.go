@@ -2,8 +2,10 @@
 package detector
 
 import (
+	"fmt"
 	"regexp"
 	"sort"
+	"time"
 	"unicode/utf8"
 
 	"github.com/antimoji/antimoji/internal/types"
@@ -16,13 +18,18 @@ func DetectEmojis(content []byte, patterns types.EmojiPatterns) types.Result[typ
 		return types.Ok(types.DetectionResult{Success: true})
 	}
 
-	result := types.DetectionResult{}
+	startTime := time.Now()
+	result := types.DetectionResult{
+		ContentSize: len(content),
+		StartTime:   startTime,
+	}
 	contentStr := string(content)
 
 	// Track line and column positions
 	line := 1
 	column := 1
 	bytePos := 0
+	patternsApplied := 0
 
 	// Convert content to runes for proper Unicode handling
 	runes := []rune(contentStr)
@@ -34,6 +41,7 @@ func DetectEmojis(content []byte, patterns types.EmojiPatterns) types.Result[typ
 
 		// Check for Unicode emojis
 		if isUnicodeEmoji(r, patterns.UnicodeRanges) {
+			patternsApplied++
 			// Handle multi-rune emojis (like skin tone modifiers)
 			emojiEnd := i + 1
 			emojiWidth := runeWidth
@@ -53,6 +61,10 @@ func DetectEmojis(content []byte, patterns types.EmojiPatterns) types.Result[typ
 				Column:   column,
 				Category: types.CategoryUnicode,
 			}
+
+			// Store debug information about the Unicode characters detected
+			match.DebugInfo = createEmojiDebugInfo(runes[i:emojiEnd], patterns.UnicodeRanges)
+
 			result.AddEmoji(match)
 
 			// Skip processed runes
@@ -71,10 +83,12 @@ func DetectEmojis(content []byte, patterns types.EmojiPatterns) types.Result[typ
 	}
 
 	// Detect text emoticons
-	result = detectEmoticons(contentStr, patterns.EmoticonPatterns, result)
+	result, emoticonPatternsApplied := detectEmoticons(contentStr, patterns.EmoticonPatterns, result)
+	patternsApplied += emoticonPatternsApplied
 
 	// Detect custom patterns
-	result = detectCustomPatterns(contentStr, patterns.CustomPatterns, result)
+	result, customPatternsApplied := detectCustomPatterns(contentStr, patterns.CustomPatterns, result)
+	patternsApplied += customPatternsApplied
 
 	// Sort emojis by position to ensure consistent ordering
 	sort.Slice(result.Emojis, func(i, j int) bool {
@@ -86,6 +100,8 @@ func DetectEmojis(content []byte, patterns types.EmojiPatterns) types.Result[typ
 	result.TotalCount = len(result.Emojis)
 
 	result.ProcessedBytes = int64(len(content))
+	result.PatternsApplied = patternsApplied
+	result.Duration = time.Since(startTime)
 	result.Finalize()
 
 	return types.Ok(result)
@@ -113,14 +129,14 @@ func DefaultEmojiPatterns() types.EmojiPatterns {
 			{Start: 0x2700, End: 0x27BF, Name: "Dingbats"},
 		},
 		EmoticonPatterns: []string{
-			`:)`, `:-)`, `:(`, `:-(`, `:D`, `:-D`, `;)`, `;-)`,
-			`:P`, `:-P`, `:p`, `:-p`, `:|`, `:-|`, `:/`, `:-/`,
-			`:o`, `:-o`, `:O`, `:-O`, `<3`, `</3`, `^_^`, `-_-`,
+			``, ``, ``, ``, ``, ``, ``, ``,
+			``, ``, ``, ``, ``, ``, ``, ``,
+			``, ``, ``, ``, ``, ``, ``, ``,
 		},
 		CustomPatterns: []string{
-			`:smile:`, `:frown:`, `:grin:`, `:sad:`, `:happy:`,
-			`:thumbs_up:`, `:thumbs_down:`, `:heart:`, `:star:`,
-			`:fire:`, `:rocket:`, `:tada:`, `:clap:`, `:wave:`,
+			``, ``, ``, ``, ``,
+			``, ``, ``, ``,
+			``, ``, ``, ``, ``,
 		},
 	}
 }
@@ -153,8 +169,12 @@ func isEmojiModifier(r rune) bool {
 }
 
 // detectEmoticons detects text-based emoticons in content.
-func detectEmoticons(content string, patterns []string, result types.DetectionResult) types.DetectionResult {
+func detectEmoticons(content string, patterns []string, result types.DetectionResult) (types.DetectionResult, int) {
 	for _, pattern := range patterns {
+		// Skip empty patterns to avoid zero-length matches causing infinite loops
+		if len(pattern) == 0 {
+			continue
+		}
 		// Simple string search for emoticons
 		start := 0
 		for {
@@ -176,12 +196,16 @@ func detectEmoticons(content string, patterns []string, result types.DetectionRe
 			start = index + len(pattern)
 		}
 	}
-	return result
+	return result, len(patterns)
 }
 
 // detectCustomPatterns detects custom emoji patterns in content.
-func detectCustomPatterns(content string, patterns []string, result types.DetectionResult) types.DetectionResult {
+func detectCustomPatterns(content string, patterns []string, result types.DetectionResult) (types.DetectionResult, int) {
 	for _, pattern := range patterns {
+		// Skip empty patterns to avoid pathological regex behavior
+		if len(pattern) == 0 {
+			continue
+		}
 		// Use regex for custom patterns to ensure word boundaries
 		regex := regexp.MustCompile(regexp.QuoteMeta(pattern))
 		matches := regex.FindAllStringIndex(content, -1)
@@ -201,7 +225,7 @@ func detectCustomPatterns(content string, patterns []string, result types.Detect
 			result.AddEmoji(emojiMatch)
 		}
 	}
-	return result
+	return result, len(patterns)
 }
 
 // findEmoticonAt finds an emoticon pattern at or after the given start position.
@@ -270,4 +294,50 @@ func removeOverlaps(emojis []types.EmojiMatch) []types.EmojiMatch {
 	}
 
 	return result
+}
+
+// createEmojiDebugInfo creates debug information for detected Unicode emojis.
+func createEmojiDebugInfo(runes []rune, ranges []types.UnicodeRange) map[string]interface{} {
+	debugInfo := make(map[string]interface{})
+
+	// Add Unicode code points
+	var codepoints []string
+	var matchedRanges []string
+
+	for _, r := range runes {
+		codepoints = append(codepoints, fmt.Sprintf("U+%04X", r))
+
+		// Find which range this rune matches
+		for _, urange := range ranges {
+			if urange.Contains(r) {
+				matchedRanges = append(matchedRanges, urange.Name)
+				break
+			}
+		}
+	}
+
+	debugInfo["codepoints"] = codepoints
+	debugInfo["matched_ranges"] = matchedRanges
+	debugInfo["rune_count"] = len(runes)
+	debugInfo["is_multi_rune"] = len(runes) > 1
+
+	// Add information about modifiers if present
+	if len(runes) > 1 {
+		var modifierTypes []string
+		for i := 1; i < len(runes); i++ {
+			r := runes[i]
+			if r >= 0x1F3FB && r <= 0x1F3FF {
+				modifierTypes = append(modifierTypes, "skin_tone")
+			} else if r == 0x200D {
+				modifierTypes = append(modifierTypes, "zwj")
+			} else if r == 0xFE0F {
+				modifierTypes = append(modifierTypes, "variation_selector")
+			} else {
+				modifierTypes = append(modifierTypes, "other")
+			}
+		}
+		debugInfo["modifiers"] = modifierTypes
+	}
+
+	return debugInfo
 }
