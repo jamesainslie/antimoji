@@ -91,9 +91,9 @@ func (u *userOutput) Info(ctx context.Context, msg string, args ...interface{}) 
 
 	formatted := fmt.Sprintf(msg, args...)
 	if u.config.EnableColors {
-		fmt.Fprintf(u.config.Writer, "\033[36mINFO:\033[0m %s\n", formatted)
+		_, _ = fmt.Fprintf(u.config.Writer, "\033[36mINFO:\033[0m %s\n", formatted)
 	} else {
-		fmt.Fprintf(u.config.Writer, "INFO: %s\n", formatted)
+		_, _ = fmt.Fprintf(u.config.Writer, "INFO: %s\n", formatted)
 	}
 }
 
@@ -108,9 +108,9 @@ func (u *userOutput) Success(ctx context.Context, msg string, args ...interface{
 
 	formatted := fmt.Sprintf(msg, args...)
 	if u.config.EnableColors {
-		fmt.Fprintf(u.config.Writer, "\033[32m\033[0m %s\n", formatted)
+		_, _ = fmt.Fprintf(u.config.Writer, "\033[32m\033[0m %s\n", formatted)
 	} else {
-		fmt.Fprintf(u.config.Writer, "SUCCESS: %s\n", formatted)
+		_, _ = fmt.Fprintf(u.config.Writer, "SUCCESS: %s\n", formatted)
 	}
 }
 
@@ -125,9 +125,9 @@ func (u *userOutput) Warning(ctx context.Context, msg string, args ...interface{
 
 	formatted := fmt.Sprintf(msg, args...)
 	if u.config.EnableColors {
-		fmt.Fprintf(u.config.ErrorWriter, "\033[33m\033[0m %s\n", formatted)
+		_, _ = fmt.Fprintf(u.config.ErrorWriter, "\033[33m\033[0m %s\n", formatted)
 	} else {
-		fmt.Fprintf(u.config.ErrorWriter, "WARNING: %s\n", formatted)
+		_, _ = fmt.Fprintf(u.config.ErrorWriter, "WARNING: %s\n", formatted)
 	}
 }
 
@@ -140,9 +140,9 @@ func (u *userOutput) Error(ctx context.Context, msg string, args ...interface{})
 
 	formatted := fmt.Sprintf(msg, args...)
 	if u.config.EnableColors {
-		fmt.Fprintf(u.config.ErrorWriter, "\033[31m\033[0m %s\n", formatted)
+		_, _ = fmt.Fprintf(u.config.ErrorWriter, "\033[31m\033[0m %s\n", formatted)
 	} else {
-		fmt.Fprintf(u.config.ErrorWriter, "ERROR: %s\n", formatted)
+		_, _ = fmt.Fprintf(u.config.ErrorWriter, "ERROR: %s\n", formatted)
 	}
 }
 
@@ -155,8 +155,8 @@ func (u *userOutput) Result(ctx context.Context, msg string, args ...interface{}
 	// Log diagnostically while showing user output
 	logging.Info(ctx, "User result displayed", "message", fmt.Sprintf(msg, args...))
 
-	fmt.Fprintf(u.config.Writer, msg, args...)
-	fmt.Fprintln(u.config.Writer)
+	_, _ = fmt.Fprintf(u.config.Writer, msg, args...)
+	_, _ = fmt.Fprintln(u.config.Writer)
 }
 
 // Progress displays progress information to the user.
@@ -170,9 +170,9 @@ func (u *userOutput) Progress(ctx context.Context, msg string, args ...interface
 
 	formatted := fmt.Sprintf(msg, args...)
 	if u.config.EnableColors {
-		fmt.Fprintf(u.config.Writer, "\033[90m%s\033[0m\n", formatted)
+		_, _ = fmt.Fprintf(u.config.Writer, "\033[90m%s\033[0m\n", formatted)
 	} else {
-		fmt.Fprintf(u.config.Writer, "%s\n", formatted)
+		_, _ = fmt.Fprintf(u.config.Writer, "%s\n", formatted)
 	}
 }
 

@@ -144,7 +144,7 @@ func (ca *ConfigAnalyzer) analyzeCodebaseImpact() ImpactAnalysis {
 	emojiCount := 0
 	fileTypes := make(map[string]int)
 
-	filepath.Walk(ca.targetDir, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(ca.targetDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() {
 			return nil
 		}
