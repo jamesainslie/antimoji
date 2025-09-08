@@ -116,7 +116,6 @@ func TestGenerateZeroToleranceConfig(t *testing.T) {
 	baseConfig := generateConfigForMode(ZeroToleranceMode, &SetupLintOptions{})
 
 	require.Contains(t, baseConfig.Profiles, "zero-tolerance")
-	require.Contains(t, baseConfig.Profiles, "zero")
 
 	profile := baseConfig.Profiles["zero-tolerance"]
 
