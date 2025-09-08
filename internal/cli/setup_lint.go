@@ -217,20 +217,42 @@ func generateAntimojiConfig(targetDir string, mode LintMode, opts *SetupLintOpti
 	return nil
 }
 
-// generateConfigForMode creates configuration based on the selected linting mode.
+// generateConfigForMode creates configuration based on the selected linting mode using templates.
 func generateConfigForMode(mode LintMode, opts *SetupLintOptions) config.Config {
 	baseConfig := config.DefaultConfig()
-
+	
+	// Map setup-lint modes to template names
+	templateName := ""
 	switch mode {
 	case ZeroToleranceMode:
-		return generateZeroToleranceConfig(baseConfig)
+		templateName = "zero-tolerance"
 	case AllowListMode:
-		return generateAllowListConfig(baseConfig, opts.AllowedEmojis)
+		templateName = "allow-list"
 	case PermissiveMode:
-		return generatePermissiveConfig(baseConfig)
+		templateName = "permissive"
 	default:
+		templateName = "zero-tolerance"
+	}
+	
+	// Apply template with options
+	templateOptions := config.TemplateOptions{
+		AllowedEmojis: opts.AllowedEmojis,
+		TargetDir:     opts.OutputDir,
+		IncludeTests:  false, // setup-lint focuses on source code
+		IncludeDocs:   false,
+	}
+	
+	profile, err := config.GetBuiltInProfile(templateName, templateOptions)
+	if err != nil {
+		// Fallback to hardcoded generation if template fails
 		return generateZeroToleranceConfig(baseConfig)
 	}
+	
+	// Create config with the template-generated profile
+	baseConfig.Profiles[string(mode)] = profile
+	baseConfig.Profiles[templateName] = profile // Also add with template name
+	
+	return baseConfig
 }
 
 // generateZeroToleranceConfig creates a strict configuration that disallows all emojis.
