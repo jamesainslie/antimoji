@@ -19,3 +19,20 @@ linters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+
+
+# Antimoji emoji linting integration
+linters-settings:
+  custom:
+    antimoji:
+      path: antimoji
+      description: "Emoji detection and linting"
+      original-url: github.com/antimoji/antimoji
+      settings:
+        config: .antimoji.yaml
+        mode: zero-tolerance
+
+# Enable custom antimoji linter
+linters:
+  enable:
+    - antimoji

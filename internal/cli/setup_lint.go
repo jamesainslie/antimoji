@@ -2,13 +2,17 @@
 package cli
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/antimoji/antimoji/internal/config"
+	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -22,6 +26,8 @@ type SetupLintOptions struct {
 	AllowedEmojis     []string
 	Force             bool
 	SkipPreCommitHook bool
+	Repair            bool
+	Review            bool
 }
 
 // LintMode represents the different linting modes available.
@@ -52,9 +58,15 @@ Linting Modes:
 
 The command will:
 - Generate appropriate .antimoji.yaml configuration
-- Update .pre-commit-config.yaml with antimoji hooks
+- Append antimoji hooks to existing .pre-commit-config.yaml (or create new)
 - Configure .golangci.yml for emoji linting integration
 - Setup pre-commit hooks for automated emoji cleaning
+
+Behavior with existing configuration files:
+- Preserves existing hooks and configuration in .pre-commit-config.yaml
+- Detects existing antimoji configuration and prompts for replacement
+- Use --force to skip confirmation prompts
+- Use --repair to restore missing .antimoji.yaml and .pre-commit-config.yaml antimoji configuration
 
 Examples:
   antimoji setup-lint --mode=zero-tolerance    # Strict: no emojis allowed
@@ -62,6 +74,8 @@ Examples:
   antimoji setup-lint --mode=allow-list --allowed-emojis=","  # Custom allowlist
   antimoji setup-lint --mode=permissive        # Lenient with warnings
   antimoji setup-lint --force                  # Overwrite existing configs
+  antimoji setup-lint --repair                 # Repair missing antimoji configs
+  antimoji setup-lint --review                 # Review existing configuration
   antimoji setup-lint --skip-precommit         # Skip pre-commit hook setup`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -77,6 +91,8 @@ Examples:
 	cmd.Flags().StringSliceVar(&opts.AllowedEmojis, "allowed-emojis", []string{"", ""}, "emojis to allow in allow-list mode")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "overwrite existing configuration files")
 	cmd.Flags().BoolVar(&opts.SkipPreCommitHook, "skip-precommit", false, "skip pre-commit hook installation")
+	cmd.Flags().BoolVar(&opts.Repair, "repair", false, "repair missing .antimoji.yaml and .pre-commit-config.yaml antimoji configuration")
+	cmd.Flags().BoolVar(&opts.Review, "review", false, "review existing configuration and explain how it will apply")
 
 	return cmd
 }
@@ -95,6 +111,11 @@ func runSetupLint(cmd *cobra.Command, args []string, opts *SetupLintOptions) err
 	// Validate target directory
 	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
 		return fmt.Errorf("target directory does not exist: %s", targetDir)
+	}
+
+	// Handle review mode
+	if opts.Review {
+		return reviewConfiguration(targetDir, opts)
 	}
 
 	// Validate linting mode
@@ -139,7 +160,11 @@ func runSetupLint(cmd *cobra.Command, args []string, opts *SetupLintOptions) err
 	}
 
 	if !quiet {
-		printSetupSummary(mode, opts)
+		if opts.Repair {
+			printRepairSummary(mode, opts)
+		} else {
+			printSetupSummary(mode, opts)
+		}
 	}
 
 	return nil
@@ -149,9 +174,23 @@ func runSetupLint(cmd *cobra.Command, args []string, opts *SetupLintOptions) err
 func generateAntimojiConfig(targetDir string, mode LintMode, opts *SetupLintOptions) error {
 	configPath := filepath.Join(targetDir, ".antimoji.yaml")
 
-	// Check if file exists and force flag
-	if _, err := os.Stat(configPath); err == nil && !opts.Force {
-		return fmt.Errorf("configuration file already exists: %s (use --force to overwrite)", configPath)
+	// Check if file exists
+	fileExists := true
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		fileExists = false
+	}
+
+	// Handle different scenarios
+	if fileExists {
+		if opts.Repair {
+			// In repair mode, if file exists, just inform and skip
+			if !quiet {
+				fmt.Printf("✓ .antimoji.yaml already exists, skipping\n")
+			}
+			return nil
+		} else if !opts.Force {
+			return fmt.Errorf("configuration file already exists: %s (use --force to overwrite)", configPath)
+		}
 	}
 
 	// Generate configuration based on mode
@@ -168,7 +207,11 @@ func generateAntimojiConfig(targetDir string, mode LintMode, opts *SetupLintOpti
 	}
 
 	if !quiet {
-		fmt.Printf("Generated antimoji configuration: %s\n", configPath)
+		if opts.Repair && !fileExists {
+			fmt.Printf("✓ Repaired missing .antimoji.yaml configuration: %s\n", configPath)
+		} else {
+			fmt.Printf("✓ Generated antimoji configuration: %s\n", configPath)
+		}
 	}
 
 	return nil
@@ -366,36 +409,276 @@ func generatePermissiveConfig(base config.Config) config.Config {
 	return base
 }
 
-// updatePreCommitConfig updates or creates .pre-commit-config.yaml.
+// updatePreCommitConfig updates or creates .pre-commit-config.yaml using append-only approach.
 func updatePreCommitConfig(targetDir string, mode LintMode, opts *SetupLintOptions) error {
 	configPath := filepath.Join(targetDir, ".pre-commit-config.yaml")
 
-	// Generate pre-commit configuration based on mode
-	preCommitConfig := generatePreCommitConfigForMode(mode, targetDir)
-
 	// Check if file exists
-	if _, err := os.Stat(configPath); err == nil && !opts.Force {
-		if !quiet {
-			fmt.Printf("Pre-commit config already exists: %s (use --force to overwrite)\n", configPath)
-		}
-		return nil
+	fileExists := true
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		fileExists = false
 	}
+
+	if !fileExists {
+		// Create new file with full configuration
+		return createNewPreCommitConfig(configPath, mode, targetDir, opts)
+	}
+
+	// File exists - parse and update it
+	return updateExistingPreCommitConfig(configPath, mode, targetDir, opts)
+}
+
+// PreCommitConfig represents the structure of .pre-commit-config.yaml
+type PreCommitConfig struct {
+	Repos []PreCommitRepo `yaml:"repos"`
+}
+
+// PreCommitRepo represents a repository in pre-commit config
+type PreCommitRepo struct {
+	Repo  string          `yaml:"repo"`
+	Rev   string          `yaml:"rev,omitempty"`
+	Hooks []PreCommitHook `yaml:"hooks"`
+}
+
+// PreCommitHook represents a hook in pre-commit config
+type PreCommitHook struct {
+	ID            string   `yaml:"id"`
+	Name          string   `yaml:"name,omitempty"`
+	Entry         string   `yaml:"entry,omitempty"`
+	Args          []string `yaml:"args,omitempty"`
+	Description   string   `yaml:"description,omitempty"`
+	Language      string   `yaml:"language,omitempty"`
+	Files         string   `yaml:"files,omitempty"`
+	Exclude       string   `yaml:"exclude,omitempty"`
+	PassFilenames bool     `yaml:"pass_filenames,omitempty"`
+	RequireSerial bool     `yaml:"require_serial,omitempty"`
+	Stages        []string `yaml:"stages,omitempty"`
+}
+
+// createNewPreCommitConfig creates a new .pre-commit-config.yaml file
+func createNewPreCommitConfig(configPath string, mode LintMode, targetDir string, opts *SetupLintOptions) error {
+	// Generate full configuration
+	preCommitConfig := generatePreCommitConfigForMode(mode, targetDir)
 
 	// Write configuration
 	if err := os.WriteFile(configPath, []byte(preCommitConfig), 0644); err != nil {
 		return fmt.Errorf("failed to write pre-commit configuration: %w", err)
 	}
 
-	// Validate the generated configuration
-	if err := validateConfiguration(configPath); err != nil {
-		return fmt.Errorf("generated configuration is invalid: %w", err)
-	}
-
 	if !quiet {
-		fmt.Printf("Updated pre-commit configuration: %s\n", configPath)
+		fmt.Printf("✓ Created new pre-commit configuration: %s\n", configPath)
 	}
 
 	return nil
+}
+
+// updateExistingPreCommitConfig updates an existing .pre-commit-config.yaml file
+func updateExistingPreCommitConfig(configPath string, mode LintMode, targetDir string, opts *SetupLintOptions) error {
+	// Read existing configuration
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read existing pre-commit configuration: %w", err)
+	}
+
+	var config PreCommitConfig
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return fmt.Errorf("failed to parse existing pre-commit configuration: %w", err)
+	}
+
+	// Check for existing antimoji configuration
+	hasAntimoji, antimojiRepoIndex := hasAntimojiConfig(&config)
+
+	if hasAntimoji {
+		if opts.Repair {
+			// In repair mode, if antimoji config exists, just inform and skip
+			if !quiet {
+				fmt.Printf("✓ .pre-commit-config.yaml antimoji configuration already exists, skipping\n")
+			}
+			return nil
+		} else if !opts.Force {
+			// Prompt user for confirmation
+			if !promptForReplacement() {
+				if !quiet {
+					fmt.Printf("ℹ  Skipped updating antimoji configuration in %s\n", configPath)
+				}
+				return nil
+			}
+		}
+	} else if opts.Repair {
+		// In repair mode, if no antimoji config exists, add it
+		if !quiet {
+			fmt.Printf("✓ Adding missing antimoji configuration to .pre-commit-config.yaml\n")
+		}
+	}
+
+	// Remove existing antimoji configuration if present
+	if hasAntimoji {
+		config.Repos = append(config.Repos[:antimojiRepoIndex], config.Repos[antimojiRepoIndex+1:]...)
+		if !quiet {
+			fmt.Printf("✓ Removed existing antimoji configuration\n")
+		}
+	}
+
+	// Add new antimoji configuration
+	antimojiRepo := generateAntimojiRepo(mode, targetDir)
+	config.Repos = append(config.Repos, antimojiRepo)
+
+	// Write updated configuration back
+	updatedData, err := yaml.Marshal(&config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated configuration: %w", err)
+	}
+
+	if err := os.WriteFile(configPath, updatedData, 0644); err != nil {
+		return fmt.Errorf("failed to write updated pre-commit configuration: %w", err)
+	}
+
+	if !quiet {
+		if opts.Repair {
+			fmt.Printf("✓ Repaired missing antimoji configuration in .pre-commit-config.yaml: %s\n", configPath)
+		} else {
+			fmt.Printf("✓ Updated pre-commit configuration: %s\n", configPath)
+		}
+	}
+
+	return nil
+}
+
+// hasAntimojiConfig checks if the configuration already contains antimoji hooks
+func hasAntimojiConfig(config *PreCommitConfig) (bool, int) {
+	antimojiHookIDs := []string{"antimoji-clean", "antimoji-verify", "antimoji-check", "build-antimoji"}
+
+	for i, repo := range config.Repos {
+		if repo.Repo == "local" {
+			for _, hook := range repo.Hooks {
+				for _, antimojiID := range antimojiHookIDs {
+					if hook.ID == antimojiID {
+						return true, i
+					}
+				}
+			}
+		}
+	}
+	return false, -1
+}
+
+// promptForReplacement prompts the user for confirmation to replace existing antimoji config
+func promptForReplacement() bool {
+	if quiet {
+		return false // Don't prompt in quiet mode
+	}
+
+	fmt.Print("⚠  Existing antimoji configuration found in .pre-commit-config.yaml\n")
+	fmt.Print("   Do you want to replace it with the new configuration? [y/N]: ")
+
+	reader := bufio.NewReader(os.Stdin)
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		return false
+	}
+
+	response = strings.TrimSpace(strings.ToLower(response))
+	return response == "y" || response == "yes"
+}
+
+// generateAntimojiRepo creates the antimoji repository configuration for pre-commit
+func generateAntimojiRepo(mode LintMode, targetDir string) PreCommitRepo {
+	antimojiCmd := detectAntimojiCommand()
+	hooks := []PreCommitHook{}
+
+	// Add build hook if needed
+	if antimojiCmd == "bin/antimoji" {
+		buildHook := PreCommitHook{
+			ID:            "build-antimoji",
+			Name:          "Build Antimoji Binary",
+			Description:   "Build antimoji binary for linting hooks",
+			Entry:         "make build",
+			Language:      "system",
+			Files:         `\.(go)$`,
+			PassFilenames: false,
+			RequireSerial: true,
+			Stages:        []string{"pre-commit", "pre-push"},
+		}
+		hooks = append(hooks, buildHook)
+	}
+
+	// Add mode-specific hooks
+	switch mode {
+	case ZeroToleranceMode:
+		cleanHook := PreCommitHook{
+			ID:            "antimoji-clean",
+			Name:          "Auto-clean Emojis (zero-tolerance)",
+			Entry:         antimojiCmd,
+			Args:          []string{"clean", "--config=.antimoji.yaml", "--profile=zero-tolerance", "--in-place", "--quiet"},
+			Description:   "Remove all emojis from source code files",
+			Language:      "system",
+			PassFilenames: true,
+			RequireSerial: true,
+		}
+		verifyHook := PreCommitHook{
+			ID:            "antimoji-verify",
+			Name:          "Zero-Tolerance Emoji Verification",
+			Entry:         antimojiCmd,
+			Args:          []string{"scan", "--config=.antimoji.yaml", "--profile=zero-tolerance", "--threshold=0", "--quiet"},
+			Description:   "Strict verification - no emojis allowed in source code",
+			Language:      "system",
+			PassFilenames: true,
+			RequireSerial: true,
+		}
+		hooks = append(hooks, cleanHook, verifyHook)
+
+	case AllowListMode:
+		cleanHook := PreCommitHook{
+			ID:            "antimoji-clean",
+			Name:          "Auto-clean Non-allowed Emojis",
+			Entry:         antimojiCmd,
+			Args:          []string{"clean", "--config=.antimoji.yaml", "--profile=allow-list", "--in-place", "--quiet"},
+			Description:   "Remove emojis not in the allowlist",
+			Language:      "system",
+			PassFilenames: true,
+			RequireSerial: true,
+		}
+		verifyHook := PreCommitHook{
+			ID:            "antimoji-verify",
+			Name:          "Allow-list Emoji Verification",
+			Entry:         antimojiCmd,
+			Args:          []string{"scan", "--config=.antimoji.yaml", "--profile=allow-list", "--threshold=5", "--quiet"},
+			Description:   "Allow-list verification - only specific emojis allowed",
+			Language:      "system",
+			PassFilenames: true,
+			RequireSerial: true,
+		}
+		hooks = append(hooks, cleanHook, verifyHook)
+
+	case PermissiveMode:
+		checkHook := PreCommitHook{
+			ID:            "antimoji-check",
+			Name:          "Permissive Emoji Check",
+			Entry:         antimojiCmd,
+			Args:          []string{"scan", "--config=.antimoji.yaml", "--profile=permissive", "--threshold=20", "--quiet"},
+			Description:   "Permissive emoji check - warns about excessive usage",
+			Language:      "system",
+			PassFilenames: true,
+			RequireSerial: false,
+		}
+		hooks = append(hooks, checkHook)
+	}
+
+	// Add file filtering to all hooks
+	filePattern := `\.(go|js|ts|jsx|tsx|py|rb|java|c|cpp|h|hpp|rs|php|swift|kt|scala)$`
+	excludePattern := `(?x)^(.*_test\.go|.*/test/.*|.*/tests/.*|.*/testdata/.*|.*/fixtures/.*|.*/mocks/.*|vendor/.*|dist/.*|bin/.*|.*\.md$|docs/.*|\.antimoji\.yaml$)$`
+
+	for i := range hooks {
+		if hooks[i].ID != "build-antimoji" {
+			hooks[i].Files = filePattern
+			hooks[i].Exclude = excludePattern
+		}
+	}
+
+	return PreCommitRepo{
+		Repo:  "local",
+		Hooks: hooks,
+	}
 }
 
 // generatePreCommitConfigForMode creates pre-commit configuration based on linting mode.
@@ -698,6 +981,46 @@ func printSetupSummary(mode LintMode, opts *SetupLintOptions) {
 	fmt.Printf("  • Clean emojis: antimoji clean --config .antimoji.yaml --in-place .\n")
 }
 
+// printRepairSummary prints a summary of the repair process.
+func printRepairSummary(mode LintMode, opts *SetupLintOptions) {
+	fmt.Printf("\nAntimoji configuration repair complete!\n\n")
+
+	fmt.Printf("Repair Summary:\n")
+	fmt.Printf("  • Linting mode: %s\n", mode)
+	fmt.Printf("  • Operation: Repaired missing antimoji configuration files\n")
+
+	switch mode {
+	case ZeroToleranceMode:
+		fmt.Printf("  • Policy: Zero tolerance - NO emojis allowed in source code\n")
+	case AllowListMode:
+		fmt.Printf("  • Policy: Allow-list - Only specific emojis allowed\n")
+		fmt.Printf("  • Allowed emojis: %s\n", strings.Join(opts.AllowedEmojis, ", "))
+	case PermissiveMode:
+		fmt.Printf("  • Policy: Permissive - Warns about excessive emoji usage\n")
+	}
+
+	fmt.Printf("\nRepaired Files:\n")
+	fmt.Printf("  • .antimoji.yaml - Antimoji configuration (if missing)\n")
+	if opts.PreCommitConfig {
+		fmt.Printf("  • .pre-commit-config.yaml - Pre-commit antimoji hooks (if missing)\n")
+	}
+	if opts.GolangCIConfig {
+		fmt.Printf("  • .golangci.yml - GolangCI-Lint integration (if missing)\n")
+	}
+
+	fmt.Printf("\nNext Steps:\n")
+	fmt.Printf("  1. Review repaired configuration files\n")
+	fmt.Printf("  2. Ensure pre-commit is installed: pip install pre-commit\n")
+	fmt.Printf("  3. Install/update hooks: pre-commit install\n")
+	fmt.Printf("  4. Test repair: pre-commit run --all-files\n")
+	fmt.Printf("  5. Commit your changes: git add . && git commit -m \"Repair antimoji configuration\"\n")
+
+	fmt.Printf("\nUsage Examples:\n")
+	fmt.Printf("  • Run manual scan: antimoji scan --config .antimoji.yaml .\n")
+	fmt.Printf("  • Run with profile: antimoji scan --profile %s .\n", mode)
+	fmt.Printf("  • Clean emojis: antimoji clean --config .antimoji.yaml --in-place .\n")
+}
+
 // isValidLintMode checks if the provided mode is valid.
 func isValidLintMode(mode LintMode) bool {
 	switch mode {
@@ -731,6 +1054,345 @@ func detectAntimojiCommand() string {
 func hasGoModule(targetDir string) bool {
 	_, err := os.Stat(filepath.Join(targetDir, "go.mod"))
 	return err == nil
+}
+
+// ReviewData holds data for the configuration review
+type ReviewData struct {
+	Mode            string
+	Policy          string
+	Threshold       string
+	AllowedEmojis   []string
+	FileCount       int
+	CurrentEmojis   int
+	PreCommitStatus string
+	GolangCIStatus  string
+	Impact          string
+	Behavior        string
+}
+
+// reviewConfiguration analyzes existing configuration and provides natural language explanation
+func reviewConfiguration(targetDir string, opts *SetupLintOptions) error {
+	if !quiet {
+		fmt.Printf("Antimoji Configuration Review\n")
+		fmt.Printf("=============================\n\n")
+	}
+
+	// Analyze existing configuration files
+	review, err := analyzeExistingConfiguration(targetDir)
+	if err != nil {
+		return fmt.Errorf("failed to analyze configuration: %w", err)
+	}
+
+	// Generate and display the review
+	return displayConfigurationReview(review)
+}
+
+// analyzeExistingConfiguration analyzes all antimoji-related configuration files
+func analyzeExistingConfiguration(targetDir string) (*ReviewData, error) {
+	review := &ReviewData{}
+
+	// Check for .antimoji.yaml
+	antimojiPath := filepath.Join(targetDir, ".antimoji.yaml")
+	if _, err := os.Stat(antimojiPath); err == nil {
+		if err := analyzeAntimojiConfig(antimojiPath, review); err != nil {
+			return nil, err
+		}
+	} else {
+		review.Mode = "not configured"
+		review.Policy = "No antimoji configuration found"
+	}
+
+	// Check for .pre-commit-config.yaml
+	preCommitPath := filepath.Join(targetDir, ".pre-commit-config.yaml")
+	if _, err := os.Stat(preCommitPath); err == nil {
+		analyzePreCommitHooks(preCommitPath, review)
+	} else {
+		review.PreCommitStatus = "Not configured"
+	}
+
+	// Check for .golangci.yml
+	golangCIPath := filepath.Join(targetDir, ".golangci.yml")
+	if _, err := os.Stat(golangCIPath); err == nil {
+		analyzeGolangCIIntegration(golangCIPath, review)
+	} else {
+		review.GolangCIStatus = "Not configured"
+	}
+
+	// Analyze codebase impact
+	analyzeCodebaseImpact(targetDir, review)
+
+	return review, nil
+}
+
+// analyzeAntimojiConfig parses .antimoji.yaml and extracts key information
+func analyzeAntimojiConfig(configPath string, review *ReviewData) error {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return err
+	}
+
+	var cfg config.Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return err
+	}
+
+	// Analyze all profiles to understand the configuration
+	profileCount := len(cfg.Profiles)
+	if profileCount == 0 {
+		review.Mode = "no profiles"
+		review.Policy = "No profiles configured"
+		review.Threshold = "No limits set"
+		return nil
+	}
+
+	// Find the most restrictive or commonly used profile
+	var primaryProfile config.Profile
+	var primaryName string
+
+	// Priority order: zero-tolerance > ci-lint > allow-list > permissive > default > first available
+	profilePriority := []string{"zero-tolerance", "ci-lint", "allow-list", "permissive", "default"}
+
+	for _, name := range profilePriority {
+		if profile, exists := cfg.Profiles[name]; exists {
+			primaryProfile = profile
+			primaryName = name
+			break
+		}
+	}
+
+	// If none of the priority profiles exist, take the first one
+	if primaryName == "" {
+		for name, profile := range cfg.Profiles {
+			primaryProfile = profile
+			primaryName = name
+			break
+		}
+	}
+
+	// Analyze the primary profile in detail
+	review.Mode = primaryName
+	review.AllowedEmojis = primaryProfile.EmojiAllowlist
+
+	// Determine policy based on actual configuration
+	if primaryProfile.MaxEmojiThreshold == 0 && len(primaryProfile.EmojiAllowlist) == 0 {
+		review.Policy = "Zero tolerance - NO emojis allowed anywhere"
+		review.Threshold = "0 emojis maximum"
+	} else if len(primaryProfile.EmojiAllowlist) > 0 && primaryProfile.MaxEmojiThreshold <= 10 {
+		review.Policy = fmt.Sprintf("Allow-list mode - Only %d specific emojis allowed", len(primaryProfile.EmojiAllowlist))
+		review.Threshold = fmt.Sprintf("%d emojis maximum", primaryProfile.MaxEmojiThreshold)
+	} else if primaryProfile.MaxEmojiThreshold > 15 {
+		review.Policy = "Permissive mode - Allows emojis with high threshold"
+		review.Threshold = fmt.Sprintf("%d emojis maximum", primaryProfile.MaxEmojiThreshold)
+	} else {
+		review.Policy = fmt.Sprintf("Custom policy with %d allowed emojis", len(primaryProfile.EmojiAllowlist))
+		review.Threshold = fmt.Sprintf("%d emojis maximum", primaryProfile.MaxEmojiThreshold)
+	}
+
+	// Add information about multiple profiles
+	if profileCount > 1 {
+		review.Policy += fmt.Sprintf(" (%d total profiles available)", profileCount)
+	}
+
+	return nil
+}
+
+// analyzePreCommitHooks checks for antimoji hooks in .pre-commit-config.yaml
+func analyzePreCommitHooks(configPath string, review *ReviewData) {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		review.PreCommitStatus = "Error reading file"
+		return
+	}
+
+	var config PreCommitConfig
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		review.PreCommitStatus = "Error parsing YAML"
+		return
+	}
+
+	hasAntimoji, _ := hasAntimojiConfig(&config)
+	if hasAntimoji {
+		review.PreCommitStatus = "Configured with antimoji hooks"
+	} else {
+		review.PreCommitStatus = "No antimoji hooks found"
+	}
+}
+
+// analyzeGolangCIIntegration checks for antimoji in .golangci.yml
+func analyzeGolangCIIntegration(configPath string, review *ReviewData) {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		review.GolangCIStatus = "Error reading file"
+		return
+	}
+
+	configStr := string(data)
+	if strings.Contains(configStr, "antimoji") {
+		review.GolangCIStatus = "Antimoji linter enabled"
+	} else {
+		review.GolangCIStatus = "No antimoji integration"
+	}
+}
+
+// analyzeCodebaseImpact analyzes the target directory to estimate impact
+func analyzeCodebaseImpact(targetDir string, review *ReviewData) {
+	fileCount := 0
+	emojiCount := 0
+
+	// Walk through the directory and count relevant files
+	filepath.Walk(targetDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+
+		if info.IsDir() {
+			// Skip common directories we don't want to scan
+			name := info.Name()
+			if name == ".git" || name == "node_modules" || name == "vendor" || name == "dist" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		// Count files that would be scanned
+		if isRelevantFile(path) {
+			fileCount++
+			// Simple emoji detection (this is a basic implementation)
+			if content, err := os.ReadFile(path); err == nil {
+				emojiCount += countEmojisInContent(string(content))
+			}
+		}
+
+		return nil
+	})
+
+	review.FileCount = fileCount
+	review.CurrentEmojis = emojiCount
+}
+
+// isRelevantFile determines if a file would be scanned by antimoji
+func isRelevantFile(path string) bool {
+	ext := strings.ToLower(filepath.Ext(path))
+	relevantExts := []string{".go", ".js", ".ts", ".jsx", ".tsx", ".py", ".rb", ".java", ".c", ".cpp", ".h", ".hpp", ".rs", ".php", ".swift", ".kt", ".scala"}
+
+	for _, relevantExt := range relevantExts {
+		if ext == relevantExt {
+			return true
+		}
+	}
+	return false
+}
+
+// countEmojisInContent provides a basic emoji count (simplified implementation)
+func countEmojisInContent(content string) int {
+	count := 0
+	// This is a simplified implementation - in reality, we'd use the full emoji detection logic
+	commonEmojis := []string{"✅", "❌", "⚠", "🎉", "🚀", "💡", "🔥", "👍", "👎", "😀", "😃", "😄", "😁", "😆"}
+
+	for _, emoji := range commonEmojis {
+		count += strings.Count(content, emoji)
+	}
+
+	return count
+}
+
+// displayConfigurationReview shows the configuration review using templates
+func displayConfigurationReview(review *ReviewData) error {
+	// Template for the review output (no emojis as requested)
+	const reviewTemplate = `Configuration Summary:
+  Mode: {{.Mode}}{{if eq .Mode "zero-tolerance"}} (strictest){{end}}
+  Policy: {{.Policy}}
+  {{- if .Threshold}}
+  Threshold: {{.Threshold}}
+  {{- end}}
+  {{- if .AllowedEmojis}}
+  Allowed emojis: {{len .AllowedEmojis}} configured
+  {{- end}}
+
+Scope Analysis:
+  Files to scan: {{humanizeInt .FileCount}} files
+  Current emojis found: {{pluralize .CurrentEmojis "emoji" "emojis"}}
+
+Configuration Status:
+  .antimoji.yaml: {{if ne .Mode "not configured"}}Present{{else}}Missing{{end}}
+  Pre-commit hooks: {{.PreCommitStatus}}
+  GolangCI-Lint: {{.GolangCIStatus}}
+
+{{if ne .Mode "not configured"}}Behavior Explanation:
+{{explainBehavior .Mode .CurrentEmojis .PreCommitStatus}}{{else}}
+Setup Required:
+  Run 'antimoji setup-lint --mode=<mode>' to configure antimoji linting.
+  Available modes: zero-tolerance, allow-list, permissive
+{{end}}
+
+Usage Examples:
+  Review configuration: antimoji setup-lint --review
+  Manual scan: antimoji scan .
+  Clean emojis: antimoji clean --in-place .
+`
+
+	// Create template with custom functions
+	tmpl := template.Must(template.New("review").Funcs(template.FuncMap{
+		"humanizeInt": func(n int) string {
+			return humanize.Comma(int64(n))
+		},
+		"pluralize": func(count int, singular, plural string) string {
+			if count == 1 {
+				return strconv.Itoa(count) + " " + singular
+			}
+			return strconv.Itoa(count) + " " + plural
+		},
+		"explainBehavior": func(mode string, emojiCount int, preCommitStatus string) string {
+			hasPreCommit := strings.Contains(preCommitStatus, "Configured with antimoji hooks")
+			commitBehavior := "On commit: "
+			if !hasPreCommit {
+				commitBehavior = "On commit: No pre-commit hooks configured - manual intervention required"
+			}
+			switch mode {
+			case "zero-tolerance":
+				if hasPreCommit {
+					if emojiCount > 0 {
+						return fmt.Sprintf("  %sWill automatically remove all %d emojis, then verify none remain\n  On CI: Will fail build if any emojis are detected\n  Manual usage: Strict scanning and cleaning available", commitBehavior, emojiCount)
+					}
+					return fmt.Sprintf("  %sWill prevent any emojis from being added\n  On CI: Will fail build if any emojis are detected\n  Manual usage: Strict scanning maintains emoji-free codebase", commitBehavior)
+				} else {
+					return fmt.Sprintf("  %s\n  On CI: Will fail build if any emojis are detected\n  Manual usage: Run 'antimoji clean --in-place .' to remove %d emojis", commitBehavior, emojiCount)
+				}
+			case "ci-lint":
+				if hasPreCommit {
+					if emojiCount > 0 {
+						return fmt.Sprintf("  %sWill remove non-allowed emojis from %d total found\n  On CI: Will fail build if non-allowed emojis detected\n  Manual usage: CI-focused linting with allowlist", commitBehavior, emojiCount)
+					}
+					return fmt.Sprintf("  %sWill enforce allowlist rules\n  On CI: Will fail build if non-allowed emojis detected\n  Manual usage: CI-focused linting with allowlist", commitBehavior)
+				} else {
+					return fmt.Sprintf("  %s\n  On CI: Will fail build if non-allowed emojis detected\n  Manual usage: Run 'antimoji clean --in-place .' to remove non-allowed emojis from %d found", commitBehavior, emojiCount)
+				}
+			case "allow-list":
+				if hasPreCommit {
+					return fmt.Sprintf("  %sWill remove non-allowed emojis and enforce limits\n  On CI: Will fail build if non-allowed or excessive emojis found\n  Manual usage: Selective emoji management", commitBehavior)
+				} else {
+					return fmt.Sprintf("  %s\n  On CI: Will fail build if non-allowed or excessive emojis found\n  Manual usage: Run 'antimoji clean --in-place .' to manage emojis manually", commitBehavior)
+				}
+			case "permissive":
+				if hasPreCommit {
+					return fmt.Sprintf("  %sWill warn about excessive emoji usage\n  On CI: Will warn but not fail builds\n  Manual usage: Lenient emoji monitoring", commitBehavior)
+				} else {
+					return fmt.Sprintf("  %s\n  On CI: Will warn but not fail builds\n  Manual usage: Run 'antimoji scan .' to monitor emoji usage", commitBehavior)
+				}
+			default:
+				if hasPreCommit {
+					if emojiCount > 0 {
+						return fmt.Sprintf("  %sCustom behavior based on profile settings\n  On CI: Custom rules apply to %d emojis found\n  Manual usage: Profile-specific emoji management", commitBehavior, emojiCount)
+					}
+					return fmt.Sprintf("  %sCustom behavior based on profile settings\n  On CI: Custom rules apply\n  Manual usage: Profile-specific emoji management", commitBehavior)
+				} else {
+					return fmt.Sprintf("  %s\n  On CI: Custom rules apply to %d emojis found\n  Manual usage: Use 'antimoji scan/clean' commands manually", commitBehavior, emojiCount)
+				}
+			}
+		},
+	}).Parse(reviewTemplate))
+
+	return tmpl.Execute(os.Stdout, review)
 }
 
 // validateConfiguration validates the generated pre-commit configuration.
