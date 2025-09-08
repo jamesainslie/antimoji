@@ -2,7 +2,6 @@
 package cli
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	"github.com/antimoji/antimoji/internal/core/detector"
 	"github.com/antimoji/antimoji/internal/core/processor"
 	"github.com/antimoji/antimoji/internal/infra/filtering"
+	ctxutil "github.com/antimoji/antimoji/internal/observability/context"
 	"github.com/antimoji/antimoji/internal/observability/logging"
 	"github.com/antimoji/antimoji/internal/types"
 	"github.com/spf13/cobra"
@@ -118,7 +118,8 @@ func runScan(cmd *cobra.Command, args []string, opts *ScanOptions) error {
 		return fmt.Errorf("failed to discover files: %w", err)
 	}
 
-	ctx := context.Background()
+	// Create operation context with proper tracing
+	ctx := ctxutil.NewComponentContext("scan", "cli")
 	logging.Info(ctx, "File discovery completed",
 		"files_found", len(filePaths),
 		"operation", "scan")

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/antimoji/antimoji/internal/observability/logging"
+	"github.com/antimoji/antimoji/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -64,7 +65,8 @@ Built with Go using functional programming principles, Antimoji provides:
 	cmd.AddCommand(NewVersionCommand())
 
 	// Set up configuration and logging
-	cobra.OnInitialize(initConfig, initLogging)
+	// Initialize logging and user output before any command execution
+	cobra.OnInitialize(initConfig, initLogging, initUserOutput)
 
 	return cmd
 }
@@ -171,4 +173,28 @@ func initLogging() {
 		// Fallback to stderr if logger initialization fails
 		fmt.Fprintf(os.Stderr, "Warning: Failed to initialize logger: %v\n", err)
 	}
+}
+
+// initUserOutput initializes the global user output system.
+func initUserOutput() {
+	// Determine user output level based on flags
+	var outputLevel ui.OutputLevel
+	if quiet {
+		outputLevel = ui.OutputSilent
+	} else if verbose {
+		outputLevel = ui.OutputVerbose
+	} else {
+		outputLevel = ui.OutputNormal
+	}
+
+	// Create user output configuration
+	config := &ui.Config{
+		Level:        outputLevel,
+		Writer:       os.Stdout,
+		ErrorWriter:  os.Stderr,
+		EnableColors: true, // TODO: Add flag to control this
+	}
+
+	// Initialize global user output
+	ui.InitGlobalUserOutput(config)
 }
