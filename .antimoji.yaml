@@ -1,32 +1,116 @@
-version: 0.5.0
 profiles:
-  zero:
-    emoji_allowlist: []
-    file_ignore_list: []
-    directory_ignore_list: [.git, vendor, dist, bin, node_modules, examples, .cursor, docs_backup_20250903_141556]
-    description: "Strict zero-tolerance profile - no emojis anywhere"
-
-  ci-lint:
-    emoji_allowlist:
-      - "✅"
-      - "❌"
-      - "⚠️"
-      - "✨"
-      - ":("
-      - ":/"
-    file_ignore_list:
-      - '**/*_test.go'
-      - '**/test/**/*'
-      - '**/testdata/**/*'
-      - '**/fixtures/**/*'
-      - README.md
-      - CHANGELOG.md
-      - .github/**/*
-      - scripts/**/*
-      - vendor/**/*
-      - dist/**/*
-      - bin/**/*
-      - 'examples/**/*'
-      - 'PRECOMMIT_REFACTOR_SUMMARY.md'
-    directory_ignore_list: [.git, vendor, dist, bin, node_modules, examples, .cursor, docs_backup_20250903_141556]
-    description: "CI-friendly profile with some allowed emojis"
+    default:
+        recursive: true
+        follow_symlinks: false
+        backup_files: false
+        unicode_emojis: true
+        text_emoticons: true
+        custom_patterns: []
+        emoji_allowlist: []
+        file_ignore_list:
+            - '*.min.js'
+            - '*.min.css'
+            - vendor/**/*
+            - node_modules/**/*
+            - .git/**/*
+            - '**/*.generated.*'
+        directory_ignore_list:
+            - .git
+            - node_modules
+            - vendor
+            - dist
+            - build
+        replacement: ""
+        preserve_whitespace: true
+        include_patterns: []
+        exclude_patterns:
+            - vendor/*
+            - node_modules/*
+            - .git/*
+        fail_on_found: false
+        max_emoji_threshold: 0
+        exit_code_on_found: 1
+        max_workers: 0
+        buffer_size: 65536
+        max_file_size: 104857600
+        output_format: table
+        show_progress: true
+        colored_output: true
+    zero-tolerance:
+        recursive: true
+        follow_symlinks: false
+        backup_files: false
+        unicode_emojis: true
+        text_emoticons: true
+        custom_patterns:
+            - ""
+            - ""
+            - ""
+            - ""
+            - ""
+            - ':warning:'
+            - ':check:'
+            - ':x:'
+        emoji_allowlist: []
+        file_ignore_list:
+            - '*.min.js'
+            - '*.min.css'
+            - vendor/**/*
+            - node_modules/**/*
+            - .git/**/*
+            - '**/*.generated.*'
+            - '**/*.pb.go'
+            - '**/wire_gen.go'
+            - README.md
+            - CHANGELOG.md
+            - '*.md'
+            - docs/**/*
+        directory_ignore_list:
+            - .git
+            - node_modules
+            - vendor
+            - dist
+            - build
+            - docs
+        replacement: ""
+        preserve_whitespace: false
+        include_patterns:
+            - '*.go'
+            - '*.js'
+            - '*.ts'
+            - '*.jsx'
+            - '*.tsx'
+            - '*.py'
+            - '*.rb'
+            - '*.java'
+            - '*.c'
+            - '*.cpp'
+            - '*.h'
+            - '*.hpp'
+            - '*.rs'
+            - '*.php'
+            - '*.swift'
+            - '*.kt'
+            - '*.scala'
+        exclude_patterns:
+            - vendor/*
+            - node_modules/*
+            - .git/*
+            - dist/*
+            - build/*
+            - '*_test.go'
+            - '*/test/*'
+            - '*/tests/*'
+            - '*/testdata/*'
+            - '*/fixtures/*'
+            - '*.md'
+            - docs/*
+        fail_on_found: true
+        max_emoji_threshold: 0
+        exit_code_on_found: 1
+        max_workers: 0
+        buffer_size: 65536
+        max_file_size: 104857600
+        output_format: table
+        show_progress: false
+        colored_output: true
