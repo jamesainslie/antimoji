@@ -83,6 +83,13 @@ func ModifyFile(filePath string, patterns types.EmojiPatterns, config ModifyConf
 		"create_backup", config.CreateBackup,
 		"respect_allowlist", config.RespectAllowlist)
 
+	// Check if file exists first, then check if it's a text file
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		logging.Debug(ctx, "File does not exist", "file_path", filePath)
+		result.Error = err
+		return types.Ok(result)
+	}
+
 	// Check if it's a text file before processing
 	if !fs.IsTextFile(filePath) {
 		logging.Debug(ctx, "Skipping binary file", "file_path", filePath)
