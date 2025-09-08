@@ -217,7 +217,7 @@ func TestGeneratePreCommitConfigForMode(t *testing.T) {
 
 			// Should contain standard structure
 			assert.Contains(t, config, "repos:")
-			
+
 			// Different modes have different hook patterns
 			if tt.mode == PermissiveMode {
 				assert.Contains(t, config, "antimoji-check")
@@ -429,7 +429,13 @@ func TestUpdatePreCommitConfig(t *testing.T) {
 			},
 			setup: func() {
 				configPath := filepath.Join(tempDir, ".pre-commit-config.yaml")
-				err := os.WriteFile(configPath, []byte("existing config"), 0644)
+				validConfig := `repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+`
+				err := os.WriteFile(configPath, []byte(validConfig), 0644)
 				require.NoError(t, err)
 			},
 			expectErr: false, // Should not error, just skip
@@ -590,4 +596,191 @@ func TestPrintSetupSummary(t *testing.T) {
 	printSetupSummary(ZeroToleranceMode, opts)
 	printSetupSummary(AllowListMode, opts)
 	printSetupSummary(PermissiveMode, opts)
+}
+
+// Test the new append-only functionality
+func TestAppendOnlyBehavior(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create existing pre-commit config with other hooks
+	existingConfig := `repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+`
+	configPath := filepath.Join(tempDir, ".pre-commit-config.yaml")
+	err := os.WriteFile(configPath, []byte(existingConfig), 0644)
+	require.NoError(t, err)
+
+	// Set quiet mode for tests
+	originalQuiet := quiet
+	quiet = true
+	defer func() { quiet = originalQuiet }()
+
+	opts := &SetupLintOptions{
+		Mode:  "zero-tolerance",
+		Force: true, // Skip confirmation prompt
+	}
+
+	// Update the config
+	err = updatePreCommitConfig(tempDir, ZeroToleranceMode, opts)
+	require.NoError(t, err)
+
+	// Read back and verify it contains both original and antimoji hooks
+	data, err := os.ReadFile(configPath)
+	require.NoError(t, err)
+
+	configStr := string(data)
+	assert.Contains(t, configStr, "trailing-whitespace", "Should preserve existing hooks")
+	assert.Contains(t, configStr, "antimoji-clean", "Should add antimoji hooks")
+	assert.Contains(t, configStr, "antimoji-verify", "Should add antimoji hooks")
+}
+
+// Test enhanced repair functionality for both config files
+func TestEnhancedRepairMode(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create existing pre-commit config without antimoji
+	existingPreCommitConfig := `repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+`
+	preCommitPath := filepath.Join(tempDir, ".pre-commit-config.yaml")
+	err := os.WriteFile(preCommitPath, []byte(existingPreCommitConfig), 0644)
+	require.NoError(t, err)
+
+	// Don't create .antimoji.yaml - let repair mode create it
+
+	// Set quiet mode for tests
+	originalQuiet := quiet
+	quiet = true
+	defer func() { quiet = originalQuiet }()
+
+	opts := &SetupLintOptions{
+		Mode:            "zero-tolerance",
+		Repair:          true,
+		OutputDir:       tempDir,
+		PreCommitConfig: true, // Enable pre-commit config generation
+	}
+
+	// Repair should create .antimoji.yaml and add antimoji to .pre-commit-config.yaml
+	err = runSetupLint(nil, []string{}, opts)
+	require.NoError(t, err)
+
+	// Verify .antimoji.yaml was created
+	antimojiPath := filepath.Join(tempDir, ".antimoji.yaml")
+	_, err = os.Stat(antimojiPath)
+	assert.NoError(t, err, ".antimoji.yaml should be created in repair mode")
+
+	// Verify antimoji was added to pre-commit config
+	data, err := os.ReadFile(preCommitPath)
+	require.NoError(t, err)
+
+	configStr := string(data)
+	assert.Contains(t, configStr, "trailing-whitespace", "Should preserve existing hooks")
+	assert.Contains(t, configStr, "antimoji-clean", "Should add antimoji hooks")
+}
+
+// Test repair mode when both files already exist
+func TestRepairModeWithExistingFiles(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create both config files
+	existingPreCommitConfig := `repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+  - repo: local
+    hooks:
+      - id: antimoji-clean
+        entry: antimoji
+        language: system
+`
+	preCommitPath := filepath.Join(tempDir, ".pre-commit-config.yaml")
+	err := os.WriteFile(preCommitPath, []byte(existingPreCommitConfig), 0644)
+	require.NoError(t, err)
+
+	antimojiPath := filepath.Join(tempDir, ".antimoji.yaml")
+	err = os.WriteFile(antimojiPath, []byte("profiles:\n  default: {}"), 0644)
+	require.NoError(t, err)
+
+	// Set quiet mode for tests
+	originalQuiet := quiet
+	quiet = true
+	defer func() { quiet = originalQuiet }()
+
+	opts := &SetupLintOptions{
+		Mode:      "zero-tolerance",
+		Repair:    true,
+		OutputDir: tempDir,
+	}
+
+	// Repair should skip both files since they exist
+	err = runSetupLint(nil, []string{}, opts)
+	require.NoError(t, err)
+
+	// Files should still exist and be unchanged
+	_, err = os.Stat(antimojiPath)
+	assert.NoError(t, err, ".antimoji.yaml should still exist")
+
+	_, err = os.Stat(preCommitPath)
+	assert.NoError(t, err, ".pre-commit-config.yaml should still exist")
+}
+
+// Test the review functionality
+func TestReviewFunctionality(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create a simple .antimoji.yaml config
+	antimojiConfig := `profiles:
+  zero-tolerance:
+    emoji_allowlist: []
+    max_emoji_threshold: 0
+    fail_on_found: true
+`
+	antimojiPath := filepath.Join(tempDir, ".antimoji.yaml")
+	err := os.WriteFile(antimojiPath, []byte(antimojiConfig), 0644)
+	require.NoError(t, err)
+
+	// Create a simple Go file with emojis for testing
+	testFile := filepath.Join(tempDir, "test.go")
+	err = os.WriteFile(testFile, []byte("package main\n// This has emojis ✅ ❌\nfunc main() {}"), 0644)
+	require.NoError(t, err)
+
+	// Set quiet mode for tests
+	originalQuiet := quiet
+	quiet = true
+	defer func() { quiet = originalQuiet }()
+
+	opts := &SetupLintOptions{
+		Review:    true,
+		OutputDir: tempDir,
+	}
+
+	// Review should analyze the configuration
+	err = runSetupLint(nil, []string{}, opts)
+	require.NoError(t, err)
+}
+
+// Test review with no configuration
+func TestReviewNoConfiguration(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Set quiet mode for tests
+	originalQuiet := quiet
+	quiet = true
+	defer func() { quiet = originalQuiet }()
+
+	opts := &SetupLintOptions{
+		Review:    true,
+		OutputDir: tempDir,
+	}
+
+	// Review should handle missing configuration gracefully
+	err := runSetupLint(nil, []string{}, opts)
+	require.NoError(t, err)
 }

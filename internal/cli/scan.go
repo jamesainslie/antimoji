@@ -13,6 +13,7 @@ import (
 	"github.com/antimoji/antimoji/internal/core/allowlist"
 	"github.com/antimoji/antimoji/internal/core/detector"
 	"github.com/antimoji/antimoji/internal/core/processor"
+	"github.com/antimoji/antimoji/internal/infra/filtering"
 	"github.com/antimoji/antimoji/internal/observability/logging"
 	"github.com/antimoji/antimoji/internal/types"
 	"github.com/spf13/cobra"
@@ -106,8 +107,13 @@ func runScan(cmd *cobra.Command, args []string, opts *ScanOptions) error {
 	// TODO: Implement command-line flag overrides for configuration
 	// For now, the flags are handled directly in the scan options
 
-	// Discover files to process
-	filePaths, err := discoverFiles(args, opts, profile)
+	// Discover files to process using unified filtering engine
+	discoveryOpts := filtering.DiscoveryOptions{
+		Recursive:      opts.Recursive,
+		IncludePattern: opts.IncludePattern,
+		ExcludePattern: opts.ExcludePattern,
+	}
+	filePaths, err := filtering.DiscoverFiles(args, discoveryOpts, profile)
 	if err != nil {
 		return fmt.Errorf("failed to discover files: %w", err)
 	}
@@ -177,6 +183,7 @@ func runScan(cmd *cobra.Command, args []string, opts *ScanOptions) error {
 }
 
 // discoverFiles discovers files to process based on arguments and options.
+// DEPRECATED: Use discoverFilesWithEngine instead. Kept for backward compatibility.
 func discoverFiles(args []string, opts *ScanOptions, profile config.Profile) ([]string, error) {
 	var filePaths []string
 

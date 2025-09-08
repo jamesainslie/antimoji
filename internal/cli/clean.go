@@ -10,6 +10,7 @@ import (
 	"github.com/antimoji/antimoji/internal/core/allowlist"
 	"github.com/antimoji/antimoji/internal/core/detector"
 	"github.com/antimoji/antimoji/internal/core/processor"
+	"github.com/antimoji/antimoji/internal/infra/filtering"
 	"github.com/antimoji/antimoji/internal/observability/logging"
 	"github.com/spf13/cobra"
 )
@@ -110,11 +111,12 @@ func runClean(_ *cobra.Command, args []string, opts *CleanOptions) error {
 	}
 	shouldUseAllowlist := allowlist.ShouldUseAllowlist(allowlistOpts, profile)
 
-	// Discover files to process (reuse scan logic)
-	scanOpts := &ScanOptions{
+	// Discover files to process using unified filtering engine
+	discoveryOpts := filtering.DiscoveryOptions{
 		Recursive: opts.Recursive,
+		// Clean command doesn't have include/exclude pattern flags, so leave empty
 	}
-	filePaths, err := discoverFiles(args, scanOpts, profile)
+	filePaths, err := filtering.DiscoverFiles(args, discoveryOpts, profile)
 	if err != nil {
 		return fmt.Errorf("failed to discover files: %w", err)
 	}

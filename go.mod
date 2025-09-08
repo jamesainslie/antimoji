@@ -3,6 +3,7 @@ module github.com/antimoji/antimoji
 go 1.23.0
 
 require (
+	github.com/dustin/go-humanize v1.0.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.11.1
