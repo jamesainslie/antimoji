@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.16] - 2025-09-08
+
+### Fixed
+- **Critical Binary File Bug**: Fixed inconsistent binary file handling between scan and clean operations
+  - Scan correctly skipped binary files, but clean processed them anyway
+  - ModifyFile was missing the binary file detection check that ProcessFile had
+  - Resolved anomalous behavior where clean reported emojis that scan didn't detect
+- **OTEL Logging Deadlock**: Replaced BatchProcessor with SimpleProcessor to prevent CLI deadlocks
+- **Logging Bypass Issues**: Eliminated direct stderr/stdout usage that bypassed the logging system
+
+### Added
+- **Comprehensive User Output System**: New `internal/ui` package for user-facing messages
+  - Colored output with success/error/warning indicators
+  - Separate user output from diagnostic logging
+  - Multiple output levels (silent, normal, verbose, debug)
+- **Enhanced Context Propagation**: New `internal/observability/context` package
+  - Structured context keys for operation, component, file path tracking
+  - Automatic context field extraction for logging
+  - Proper context propagation throughout the application
+- **Advanced Emoji Detection Debugging**: 
+  - Detailed Unicode code point logging for detected emojis
+  - Pattern application tracking and performance metrics
+  - Debug information for emoji matches with range details
+- **Enhanced Binary File Detection**:
+  - Detailed logging of binary file detection reasoning
+  - Consistent binary file handling across all operations
+  - Better diagnostics for file type classification
+
+### Changed
+- **Logging Architecture**: Complete overhaul of logging system
+  - OpenTelemetry compliant structured logging for diagnostics
+  - Separate user-facing output system for CLI interaction
+  - Context-aware logging with automatic field enhancement
+- **CLI Output**: Replaced direct fmt.Printf calls with structured output
+- **Error Handling**: Enhanced error correlation with context information
+- **Performance Monitoring**: Added timing, content size, and pattern metrics
+
+### Technical Details
+- Fixed ModifyFile to include binary file detection check (critical consistency fix)
+- Enhanced OTEL setup with proper resource configuration and semantic conventions
+- Implemented comprehensive debugging system for troubleshooting detection issues
+- Added structured logging with service name, version, operation, and component tracking
+- Created thread-safe global logger and user output systems
+
+### Impact
+- **Consistent Behavior**: Scan and clean operations now behave identically
+- **Better Diagnostics**: Complete visibility into emoji detection and file processing
+- **Improved User Experience**: Clean, colored output separate from diagnostic logs
+- **Production Ready**: Structured logs ready for monitoring and analysis
+
 ## [v0.9.15] - 2025-09-07
 
 ### Fixed

@@ -23,7 +23,7 @@ var (
 	logFormat   string
 
 	// Build information (will be set by main package)
-	buildVersion   = "0.9.15"
+	buildVersion   = "0.9.16"
 	buildTime      = "unknown"
 	buildGitCommit = "unknown"
 )
