@@ -44,7 +44,9 @@ func DiscoverFiles(args []string, opts DiscoveryOptions, profile config.Profile)
 						// Check if directory should be ignored using engine
 						// Test with a dummy file to check directory rules
 						decision := engine.ShouldInclude(filepath.Join(path, "dummy.go"))
-						if !decision.Include && strings.Contains(decision.Rule, "directory") {
+						if !decision.Include && (strings.Contains(decision.Rule, "directory") ||
+							strings.Contains(decision.Rule, "exclude") ||
+							strings.Contains(decision.Rule, "ignore")) {
 							return filepath.SkipDir
 						}
 						return nil

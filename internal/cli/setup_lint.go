@@ -120,7 +120,7 @@ func runSetupLint(cmd *cobra.Command, args []string, opts *SetupLintOptions) err
 	if opts.Review {
 		return reviewConfiguration(targetDir, opts)
 	}
-	
+
 	// Handle validation mode
 	if opts.Validate {
 		return validateConfigurationFile(targetDir, opts)
@@ -193,7 +193,7 @@ func generateAntimojiConfig(targetDir string, mode LintMode, opts *SetupLintOpti
 		if opts.Repair {
 			// In repair mode, if file exists, just inform and skip
 			if !quiet {
-				fmt.Printf("✓ .antimoji.yaml already exists, skipping\n")
+				fmt.Printf(" .antimoji.yaml already exists, skipping\n")
 			}
 			return nil
 		} else if !opts.Force {
@@ -216,9 +216,9 @@ func generateAntimojiConfig(targetDir string, mode LintMode, opts *SetupLintOpti
 
 	if !quiet {
 		if opts.Repair && !fileExists {
-			fmt.Printf("✓ Repaired missing .antimoji.yaml configuration: %s\n", configPath)
+			fmt.Printf(" Repaired missing .antimoji.yaml configuration: %s\n", configPath)
 		} else {
-			fmt.Printf("✓ Generated antimoji configuration: %s\n", configPath)
+			fmt.Printf(" Generated antimoji configuration: %s\n", configPath)
 		}
 	}
 
@@ -228,7 +228,7 @@ func generateAntimojiConfig(targetDir string, mode LintMode, opts *SetupLintOpti
 // generateConfigForMode creates configuration based on the selected linting mode using templates.
 func generateConfigForMode(mode LintMode, opts *SetupLintOptions) config.Config {
 	baseConfig := config.DefaultConfig()
-	
+
 	// Map setup-lint modes to template names
 	templateName := ""
 	switch mode {
@@ -241,7 +241,7 @@ func generateConfigForMode(mode LintMode, opts *SetupLintOptions) config.Config 
 	default:
 		templateName = "zero-tolerance"
 	}
-	
+
 	// Apply template with options
 	templateOptions := config.TemplateOptions{
 		AllowedEmojis: opts.AllowedEmojis,
@@ -249,17 +249,17 @@ func generateConfigForMode(mode LintMode, opts *SetupLintOptions) config.Config 
 		IncludeTests:  false, // setup-lint focuses on source code
 		IncludeDocs:   false,
 	}
-	
+
 	profile, err := config.GetBuiltInProfile(templateName, templateOptions)
 	if err != nil {
 		// Fallback to hardcoded generation if template fails
 		return generateZeroToleranceConfig(baseConfig)
 	}
-	
+
 	// Create config with the template-generated profile
 	baseConfig.Profiles[string(mode)] = profile
 	baseConfig.Profiles[templateName] = profile // Also add with template name
-	
+
 	return baseConfig
 }
 
@@ -496,7 +496,7 @@ func createNewPreCommitConfig(configPath string, mode LintMode, targetDir string
 	}
 
 	if !quiet {
-		fmt.Printf("✓ Created new pre-commit configuration: %s\n", configPath)
+		fmt.Printf(" Created new pre-commit configuration: %s\n", configPath)
 	}
 
 	return nil
@@ -522,7 +522,7 @@ func updateExistingPreCommitConfig(configPath string, mode LintMode, targetDir s
 		if opts.Repair {
 			// In repair mode, if antimoji config exists, just inform and skip
 			if !quiet {
-				fmt.Printf("✓ .pre-commit-config.yaml antimoji configuration already exists, skipping\n")
+				fmt.Printf(" .pre-commit-config.yaml antimoji configuration already exists, skipping\n")
 			}
 			return nil
 		} else if !opts.Force {
@@ -537,7 +537,7 @@ func updateExistingPreCommitConfig(configPath string, mode LintMode, targetDir s
 	} else if opts.Repair {
 		// In repair mode, if no antimoji config exists, add it
 		if !quiet {
-			fmt.Printf("✓ Adding missing antimoji configuration to .pre-commit-config.yaml\n")
+			fmt.Printf(" Adding missing antimoji configuration to .pre-commit-config.yaml\n")
 		}
 	}
 
@@ -545,7 +545,7 @@ func updateExistingPreCommitConfig(configPath string, mode LintMode, targetDir s
 	if hasAntimoji {
 		config.Repos = append(config.Repos[:antimojiRepoIndex], config.Repos[antimojiRepoIndex+1:]...)
 		if !quiet {
-			fmt.Printf("✓ Removed existing antimoji configuration\n")
+			fmt.Printf(" Removed existing antimoji configuration\n")
 		}
 	}
 
@@ -565,9 +565,9 @@ func updateExistingPreCommitConfig(configPath string, mode LintMode, targetDir s
 
 	if !quiet {
 		if opts.Repair {
-			fmt.Printf("✓ Repaired missing antimoji configuration in .pre-commit-config.yaml: %s\n", configPath)
+			fmt.Printf(" Repaired missing antimoji configuration in .pre-commit-config.yaml: %s\n", configPath)
 		} else {
-			fmt.Printf("✓ Updated pre-commit configuration: %s\n", configPath)
+			fmt.Printf(" Updated pre-commit configuration: %s\n", configPath)
 		}
 	}
 
@@ -598,7 +598,7 @@ func promptForReplacement() bool {
 		return false // Don't prompt in quiet mode
 	}
 
-	fmt.Print("⚠  Existing antimoji configuration found in .pre-commit-config.yaml\n")
+	fmt.Print("  Existing antimoji configuration found in .pre-commit-config.yaml\n")
 	fmt.Print("   Do you want to replace it with the new configuration? [y/N]: ")
 
 	reader := bufio.NewReader(os.Stdin)
@@ -863,16 +863,6 @@ repos:
 func updateGolangCIConfig(targetDir string, mode LintMode, opts *SetupLintOptions) error {
 	configPath := filepath.Join(targetDir, ".golangci.yml")
 
-	// Read existing configuration if it exists
-	var existingConfig strings.Builder
-	if data, err := os.ReadFile(configPath); err == nil && !opts.Force {
-		existingConfig.Write(data)
-		existingConfig.WriteString("\n")
-	}
-
-	// Add antimoji linting configuration
-	antimojiConfig := generateGolangCIConfigForMode(mode)
-
 	// If file doesn't exist or force flag is set, write complete config
 	if _, err := os.Stat(configPath); os.IsNotExist(err) || opts.Force {
 		fullConfig := fmt.Sprintf(`# golangci-lint configuration with Antimoji integration
@@ -892,26 +882,127 @@ linters:
     - staticcheck   # Advanced static analysis
     - unused        # Find unused code
     - misspell      # Finds commonly misspelled English words
+    - antimoji      # Emoji detection and linting
+
+linters-settings:
+  custom:
+    antimoji:
+      path: %s
+      description: "Emoji detection and linting"
+      original-url: github.com/antimoji/antimoji
+      settings:
+        config: .antimoji.yaml
+        mode: %s
 
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-
-%s`, mode, antimojiConfig)
+`, mode, detectAntimojiCommand(), string(mode))
 
 		if err := os.WriteFile(configPath, []byte(fullConfig), 0644); err != nil {
 			return fmt.Errorf("failed to write golangci-lint configuration: %w", err)
 		}
 	} else {
-		// Append antimoji configuration to existing file
-		existingConfig.WriteString(antimojiConfig)
-		if err := os.WriteFile(configPath, []byte(existingConfig.String()), 0644); err != nil {
-			return fmt.Errorf("failed to update golangci-lint configuration: %w", err)
+		// Read and parse existing configuration
+		data, err := os.ReadFile(configPath)
+		if err != nil {
+			return fmt.Errorf("failed to read existing golangci-lint configuration: %w", err)
+		}
+
+		var config map[string]interface{}
+		if err := yaml.Unmarshal(data, &config); err != nil {
+			return fmt.Errorf("failed to parse existing golangci-lint configuration: %w", err)
+		}
+
+		// Check if antimoji config already exists to avoid duplicates
+		if lintersSettings, ok := config["linters-settings"].(map[string]interface{}); ok {
+			if custom, ok := lintersSettings["custom"].(map[string]interface{}); ok {
+				if _, exists := custom["antimoji"]; exists {
+					if !quiet {
+						fmt.Printf("  Antimoji configuration already exists in .golangci.yml (use --force to overwrite)\n")
+					}
+					return nil
+				}
+			}
+		}
+
+		// Merge antimoji configuration
+		if err := mergeAntimojiConfig(config, mode); err != nil {
+			return fmt.Errorf("failed to merge antimoji configuration: %w", err)
+		}
+
+		// Write back the merged configuration
+		updatedData, err := yaml.Marshal(config)
+		if err != nil {
+			return fmt.Errorf("failed to marshal updated configuration: %w", err)
+		}
+
+		if err := os.WriteFile(configPath, updatedData, 0644); err != nil {
+			return fmt.Errorf("failed to write updated golangci-lint configuration: %w", err)
 		}
 	}
 
 	if !quiet {
 		fmt.Printf(" Updated golangci-lint configuration: %s\n", configPath)
+	}
+
+	return nil
+}
+
+// mergeAntimojiConfig merges antimoji configuration into existing golangci-lint config.
+func mergeAntimojiConfig(config map[string]interface{}, mode LintMode) error {
+	antimojiCmd := detectAntimojiCommand()
+
+	// Convert relative path to absolute for golangci-lint
+	if antimojiCmd == "bin/antimoji" {
+		antimojiCmd = "./bin/antimoji"
+	}
+
+	// Ensure linters section exists
+	if _, ok := config["linters"]; !ok {
+		config["linters"] = make(map[string]interface{})
+	}
+	linters := config["linters"].(map[string]interface{})
+
+	// Ensure linters.enable array exists
+	if _, ok := linters["enable"]; !ok {
+		linters["enable"] = make([]interface{}, 0)
+	}
+
+	// Add antimoji to linters.enable if not already present
+	enableList := linters["enable"].([]interface{})
+	antimojiExists := false
+	for _, linter := range enableList {
+		if linter == "antimoji" {
+			antimojiExists = true
+			break
+		}
+	}
+	if !antimojiExists {
+		linters["enable"] = append(enableList, "antimoji")
+	}
+
+	// Ensure linters-settings section exists
+	if _, ok := config["linters-settings"]; !ok {
+		config["linters-settings"] = make(map[string]interface{})
+	}
+	lintersSettings := config["linters-settings"].(map[string]interface{})
+
+	// Ensure linters-settings.custom section exists
+	if _, ok := lintersSettings["custom"]; !ok {
+		lintersSettings["custom"] = make(map[string]interface{})
+	}
+	custom := lintersSettings["custom"].(map[string]interface{})
+
+	// Add antimoji custom linter configuration
+	custom["antimoji"] = map[string]interface{}{
+		"path":         antimojiCmd,
+		"description":  "Emoji detection and linting",
+		"original-url": "github.com/antimoji/antimoji",
+		"settings": map[string]interface{}{
+			"config": ".antimoji.yaml",
+			"mode":   string(mode),
+		},
 	}
 
 	return nil
@@ -1163,10 +1254,10 @@ func analyzeAntimojiConfigEnhanced(configPath, targetDir string, review *ReviewD
 	// Find the primary profile to analyze
 	var primaryProfile config.Profile
 	var primaryName string
-	
+
 	// Priority order for profile selection
 	profilePriority := []string{"zero-tolerance", "ci-lint", "allow-list", "permissive", "default"}
-	
+
 	for _, name := range profilePriority {
 		if profile, exists := cfg.Profiles[name]; exists {
 			primaryProfile = profile
@@ -1174,7 +1265,7 @@ func analyzeAntimojiConfigEnhanced(configPath, targetDir string, review *ReviewD
 			break
 		}
 	}
-	
+
 	// If none found, take the first available profile
 	if primaryName == "" {
 		for name, profile := range cfg.Profiles {
@@ -1183,7 +1274,7 @@ func analyzeAntimojiConfigEnhanced(configPath, targetDir string, review *ReviewD
 			break
 		}
 	}
-	
+
 	if primaryName == "" {
 		return fmt.Errorf("no profiles found in configuration")
 	}
@@ -1191,7 +1282,7 @@ func analyzeAntimojiConfigEnhanced(configPath, targetDir string, review *ReviewD
 	// Create analyzer and perform deep analysis
 	analyzer := analysis.NewConfigAnalyzer(primaryProfile, targetDir)
 	analysisResult := analyzer.AnalyzeConfiguration()
-	
+
 	// Map analysis results to review data
 	review.Mode = primaryName
 	review.Policy = analysisResult.PolicyAnalysis.Description
@@ -1199,13 +1290,13 @@ func analyzeAntimojiConfigEnhanced(configPath, targetDir string, review *ReviewD
 	review.AllowedEmojis = analysisResult.PolicyAnalysis.AllowedEmojis
 	review.FileCount = analysisResult.ImpactAnalysis.FilesToScan
 	review.CurrentEmojis = analysisResult.ImpactAnalysis.CurrentEmojis
-	
+
 	// Add profile count information
 	profileCount := len(cfg.Profiles)
 	if profileCount > 1 {
 		review.Policy += fmt.Sprintf(" (%d total profiles available)", profileCount)
 	}
-	
+
 	return nil
 }
 
@@ -1372,7 +1463,7 @@ func isRelevantFile(path string) bool {
 func countEmojisInContent(content string) int {
 	count := 0
 	// This is a simplified implementation - in reality, we'd use the full emoji detection logic
-	commonEmojis := []string{"✅", "❌", "⚠", "🎉", "🚀", "💡", "🔥", "👍", "👎", "😀", "😃", "😄", "😁", "😆"}
+	commonEmojis := []string{"", "", "", "", "", "", "", "", "", "", "", "", "", ""}
 
 	for _, emoji := range commonEmojis {
 		count += strings.Count(content, emoji)
@@ -1497,11 +1588,11 @@ func validateConfigurationFile(targetDir string, opts *SetupLintOptions) error {
 
 	// Validate the configuration file
 	validationResult := config.ValidateConfigFile(configPath)
-	
+
 	// Display results
 	fmt.Printf("Configuration File: %s\n", configPath)
 	fmt.Printf("Status: %s\n\n", validationResult.Summary.String())
-	
+
 	if len(validationResult.Issues) > 0 {
 		fmt.Printf("Issues Found:\n")
 		for _, issue := range validationResult.Issues {
@@ -1510,7 +1601,7 @@ func validateConfigurationFile(targetDir string, opts *SetupLintOptions) error {
 	} else {
 		fmt.Printf("No issues found. Configuration is valid!\n")
 	}
-	
+
 	// Show suggestions if available
 	if validationResult.Summary.Infos > 0 {
 		fmt.Printf("Suggestions for improvement:\n")
