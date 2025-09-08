@@ -12,6 +12,7 @@ import (
 	"text/template"
 
 	"github.com/antimoji/antimoji/internal/config"
+	"github.com/antimoji/antimoji/internal/infra/analysis"
 	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -1109,14 +1110,14 @@ func reviewConfiguration(targetDir string, opts *SetupLintOptions) error {
 	return displayConfigurationReview(review)
 }
 
-// analyzeExistingConfiguration analyzes all antimoji-related configuration files
+// analyzeExistingConfiguration analyzes all antimoji-related configuration files using the enhanced analyzer.
 func analyzeExistingConfiguration(targetDir string) (*ReviewData, error) {
 	review := &ReviewData{}
 
 	// Check for .antimoji.yaml
 	antimojiPath := filepath.Join(targetDir, ".antimoji.yaml")
 	if _, err := os.Stat(antimojiPath); err == nil {
-		if err := analyzeAntimojiConfig(antimojiPath, review); err != nil {
+		if err := analyzeAntimojiConfigEnhanced(antimojiPath, targetDir, review); err != nil {
 			return nil, err
 		}
 	} else {
@@ -1140,10 +1141,65 @@ func analyzeExistingConfiguration(targetDir string) (*ReviewData, error) {
 		review.GolangCIStatus = "Not configured"
 	}
 
-	// Analyze codebase impact
-	analyzeCodebaseImpact(targetDir, review)
-
 	return review, nil
+}
+
+// analyzeAntimojiConfigEnhanced uses the new analyzer for enhanced configuration analysis.
+func analyzeAntimojiConfigEnhanced(configPath, targetDir string, review *ReviewData) error {
+	// Load configuration
+	configResult := config.LoadConfig(configPath)
+	if configResult.IsErr() {
+		return configResult.Error()
+	}
+	cfg := configResult.Unwrap()
+
+	// Find the primary profile to analyze
+	var primaryProfile config.Profile
+	var primaryName string
+	
+	// Priority order for profile selection
+	profilePriority := []string{"zero-tolerance", "ci-lint", "allow-list", "permissive", "default"}
+	
+	for _, name := range profilePriority {
+		if profile, exists := cfg.Profiles[name]; exists {
+			primaryProfile = profile
+			primaryName = name
+			break
+		}
+	}
+	
+	// If none found, take the first available profile
+	if primaryName == "" {
+		for name, profile := range cfg.Profiles {
+			primaryProfile = profile
+			primaryName = name
+			break
+		}
+	}
+	
+	if primaryName == "" {
+		return fmt.Errorf("no profiles found in configuration")
+	}
+
+	// Create analyzer and perform deep analysis
+	analyzer := analysis.NewConfigAnalyzer(primaryProfile, targetDir)
+	analysisResult := analyzer.AnalyzeConfiguration()
+	
+	// Map analysis results to review data
+	review.Mode = primaryName
+	review.Policy = analysisResult.PolicyAnalysis.Description
+	review.Threshold = fmt.Sprintf("%d emojis maximum", analysisResult.PolicyAnalysis.Threshold)
+	review.AllowedEmojis = analysisResult.PolicyAnalysis.AllowedEmojis
+	review.FileCount = analysisResult.ImpactAnalysis.FilesToScan
+	review.CurrentEmojis = analysisResult.ImpactAnalysis.CurrentEmojis
+	
+	// Add profile count information
+	profileCount := len(cfg.Profiles)
+	if profileCount > 1 {
+		review.Policy += fmt.Sprintf(" (%d total profiles available)", profileCount)
+	}
+	
+	return nil
 }
 
 // analyzeAntimojiConfig parses .antimoji.yaml and extracts key information
