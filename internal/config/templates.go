@@ -32,10 +32,10 @@ func NewTemplateRegistry() *TemplateRegistry {
 	registry := &TemplateRegistry{
 		templates: make(map[string]ConfigTemplate),
 	}
-	
+
 	// Register built-in templates
 	registry.registerBuiltInTemplates()
-	
+
 	return registry
 }
 
@@ -45,15 +45,15 @@ func (tr *TemplateRegistry) ApplyTemplate(templateName string, options TemplateO
 	if !exists {
 		return Profile{}, fmt.Errorf("template not found: %s", templateName)
 	}
-	
+
 	// Start with base profile
 	profile := template.BaseProfile
-	
+
 	// Apply customizations if customizer exists
 	if template.Customizer != nil {
 		profile = template.Customizer(profile, options)
 	}
-	
+
 	return profile, nil
 }
 
@@ -73,19 +73,19 @@ func (tr *TemplateRegistry) registerBuiltInTemplates() {
 		Name:        "zero-tolerance",
 		Description: "Strict emoji-free codebase configuration",
 		BaseProfile: Profile{
-			Recursive:   true,
-			
+			Recursive: true,
+
 			// Emoji detection
 			UnicodeEmojis:  true,
 			TextEmoticons:  true,
-			CustomPatterns: []string{"😀", "😃", "😄", "😁", "😆", ":warning:", ":check:", ":x:"},
-			
+			CustomPatterns: []string{"", "", "", "", "", ":warning:", ":check:", ":x:"},
+
 			// Zero tolerance policy
 			EmojiAllowlist:    []string{}, // No emojis allowed
 			MaxEmojiThreshold: 0,
 			FailOnFound:       true,
 			ExitCodeOnFound:   1,
-			
+
 			// File filtering - focus on source code
 			IncludePatterns: []string{
 				"*.go", "*.js", "*.ts", "*.jsx", "*.tsx", "*.py", "*.rb",
@@ -105,37 +105,37 @@ func (tr *TemplateRegistry) registerBuiltInTemplates() {
 			DirectoryIgnoreList: []string{
 				".git", "node_modules", "vendor", "dist", "build", "docs",
 			},
-			
+
 			// Performance
 			MaxWorkers:  0,
 			BufferSize:  64 * 1024,
 			MaxFileSize: 100 * 1024 * 1024,
-			
+
 			// Output
 			OutputFormat:  "table",
 			ShowProgress:  false,
 			ColoredOutput: true,
 		},
 	}
-	
+
 	// Allow List Template
 	tr.templates["allow-list"] = ConfigTemplate{
 		Name:        "allow-list",
 		Description: "Allow-list configuration with specific emojis",
 		BaseProfile: Profile{
-			Recursive:   true,
-			
+			Recursive: true,
+
 			// Emoji detection
 			UnicodeEmojis:  true,
 			TextEmoticons:  true,
-			CustomPatterns: []string{"😀", "😃", "😄", "😁", "😆", ":warning:", ":check:", ":x:"},
-			
+			CustomPatterns: []string{"", "", "", "", "", ":warning:", ":check:", ":x:"},
+
 			// Allow-list policy (will be customized)
-			EmojiAllowlist:    []string{"✅", "❌"}, // Default allowlist
+			EmojiAllowlist:    []string{"", ""}, // Default allowlist
 			MaxEmojiThreshold: 5,
 			FailOnFound:       true,
 			ExitCodeOnFound:   1,
-			
+
 			// File filtering - same as zero tolerance
 			IncludePatterns: []string{
 				"*.go", "*.js", "*.ts", "*.jsx", "*.tsx", "*.py", "*.rb",
@@ -155,12 +155,12 @@ func (tr *TemplateRegistry) registerBuiltInTemplates() {
 			DirectoryIgnoreList: []string{
 				".git", "node_modules", "vendor", "dist", "build", "docs",
 			},
-			
+
 			// Performance
 			MaxWorkers:  0,
 			BufferSize:  64 * 1024,
 			MaxFileSize: 100 * 1024 * 1024,
-			
+
 			// Output
 			OutputFormat:  "table",
 			ShowProgress:  false,
@@ -171,37 +171,37 @@ func (tr *TemplateRegistry) registerBuiltInTemplates() {
 			if len(options.AllowedEmojis) > 0 {
 				profile.EmojiAllowlist = options.AllowedEmojis
 			}
-			
+
 			// Apply custom threshold
 			if options.Threshold > 0 {
 				profile.MaxEmojiThreshold = options.Threshold
 			}
-			
+
 			return profile
 		},
 	}
-	
+
 	// Permissive Template
 	tr.templates["permissive"] = ConfigTemplate{
 		Name:        "permissive",
 		Description: "Permissive configuration that warns but doesn't fail",
 		BaseProfile: Profile{
-			Recursive:   true,
-			
+			Recursive: true,
+
 			// Emoji detection
 			UnicodeEmojis:  true,
 			TextEmoticons:  true,
-			CustomPatterns: []string{"😀", "😃", "😄", "😁", "😆", ":warning:", ":check:", ":x:"},
-			
+			CustomPatterns: []string{"", "", "", "", "", ":warning:", ":check:", ":x:"},
+
 			// Permissive policy
 			EmojiAllowlist: []string{
-				"✅", "❌", "⚠️", "🎉", "🚀", "💡", "🔥", "👍", "👎", "😀",
-				"😃", "😄", "😁", "😆", "🤔", "😕", "😢", "😡", "🙄", "😎",
+				"", "", "", "", "", "", "", "", "", "",
+				"", "", "", "", "", "", "", "", "", "",
 			},
 			MaxEmojiThreshold: 20,
 			FailOnFound:       false, // Don't fail, just warn
 			ExitCodeOnFound:   0,     // Don't exit with error
-			
+
 			// More lenient file filtering
 			IncludePatterns: []string{
 				"*.go", "*.js", "*.ts", "*.jsx", "*.tsx", "*.py", "*.rb",
@@ -218,12 +218,12 @@ func (tr *TemplateRegistry) registerBuiltInTemplates() {
 			DirectoryIgnoreList: []string{
 				".git", "node_modules", "vendor", "dist", "build",
 			},
-			
+
 			// Performance
 			MaxWorkers:  0,
 			BufferSize:  64 * 1024,
 			MaxFileSize: 100 * 1024 * 1024,
-			
+
 			// Output
 			OutputFormat:  "table",
 			ShowProgress:  false,

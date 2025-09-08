@@ -159,7 +159,7 @@ func DefaultConfig() Config {
 
 				// File filters - empty include patterns means include all files
 				IncludePatterns: []string{}, // Empty = include all files (unless excluded)
-				ExcludePatterns: []string{"vendor/*", "node_modules/*", ".git/*"},
+				ExcludePatterns: []string{"vendor/*", "node_modules/*", ".git/*", ".git/**/*"},
 
 				// CI/CD and linting
 				FailOnFound:       false,

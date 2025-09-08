@@ -30,15 +30,15 @@ type ValidationIssue struct {
 func (vi ValidationIssue) String() string {
 	prefix := strings.ToUpper(string(vi.Level))
 	result := fmt.Sprintf("[%s] %s: %s", prefix, vi.Field, vi.Message)
-	
+
 	if vi.Suggestion != "" {
 		result += fmt.Sprintf("\n  Suggestion: %s", vi.Suggestion)
 	}
-	
+
 	if vi.Example != "" {
 		result += fmt.Sprintf("\n  Example: %s", vi.Example)
 	}
-	
+
 	return result
 }
 
@@ -57,22 +57,22 @@ func NewConfigValidator() *ConfigValidator {
 // ValidateConfig performs comprehensive validation of a configuration.
 func (cv *ConfigValidator) ValidateConfig(config Config) ValidationResult {
 	cv.issues = make([]ValidationIssue, 0)
-	
+
 	// Validate basic structure
 	if len(config.Profiles) == 0 {
-		cv.addError("profiles", nil, "no profiles defined", 
-			"add at least one profile", 
+		cv.addError("profiles", nil, "no profiles defined",
+			"add at least one profile",
 			"profiles:\n  default:\n    unicode_emojis: true")
 	}
-	
+
 	// Validate each profile
 	for name, profile := range config.Profiles {
 		cv.validateProfile(name, profile)
 	}
-	
+
 	// Validate cross-profile consistency
 	cv.validateCrossProfileConsistency(config)
-	
+
 	return ValidationResult{
 		IsValid: cv.countErrors() == 0,
 		Issues:  cv.issues,
@@ -83,19 +83,19 @@ func (cv *ConfigValidator) ValidateConfig(config Config) ValidationResult {
 // validateProfile validates a single profile with detailed feedback.
 func (cv *ConfigValidator) validateProfile(name string, profile Profile) {
 	fieldPrefix := fmt.Sprintf("profiles.%s", name)
-	
+
 	// Validate emoji policy consistency
 	cv.validateEmojiPolicyConsistency(fieldPrefix, profile)
-	
+
 	// Validate file filtering logic
 	cv.validateFileFilteringLogic(fieldPrefix, profile)
-	
+
 	// Validate performance settings
 	cv.validatePerformanceSettings(fieldPrefix, profile)
-	
+
 	// Validate output settings
 	cv.validateOutputSettings(fieldPrefix, profile)
-	
+
 	// Check for common misconfigurations
 	cv.checkCommonMisconfigurations(fieldPrefix, profile)
 }
@@ -109,7 +109,7 @@ func (cv *ConfigValidator) validateEmojiPolicyConsistency(fieldPrefix string, pr
 			"either increase threshold or remove allowlist",
 			"max_emoji_threshold: 5  # or emoji_allowlist: []")
 	}
-	
+
 	// Check allowlist without threshold
 	if len(profile.EmojiAllowlist) > 0 && profile.MaxEmojiThreshold == 0 {
 		cv.addWarning(fieldPrefix+".max_emoji_threshold", profile.MaxEmojiThreshold,
@@ -117,7 +117,7 @@ func (cv *ConfigValidator) validateEmojiPolicyConsistency(fieldPrefix string, pr
 			"set threshold to match allowlist size",
 			fmt.Sprintf("max_emoji_threshold: %d", len(profile.EmojiAllowlist)))
 	}
-	
+
 	// Check unrealistic thresholds
 	if profile.MaxEmojiThreshold > 100 {
 		cv.addWarning(fieldPrefix+".max_emoji_threshold", profile.MaxEmojiThreshold,
@@ -125,7 +125,7 @@ func (cv *ConfigValidator) validateEmojiPolicyConsistency(fieldPrefix string, pr
 			"consider a lower threshold for better emoji control",
 			"max_emoji_threshold: 20")
 	}
-	
+
 	// Check detection method consistency
 	if !profile.UnicodeEmojis && !profile.TextEmoticons && len(profile.CustomPatterns) == 0 {
 		cv.addError(fieldPrefix+".emoji_detection", nil,
@@ -133,7 +133,7 @@ func (cv *ConfigValidator) validateEmojiPolicyConsistency(fieldPrefix string, pr
 			"enable at least one detection method",
 			"unicode_emojis: true\ntext_emoticons: true")
 	}
-	
+
 	// Check fail behavior consistency
 	if !profile.FailOnFound && profile.ExitCodeOnFound > 0 {
 		cv.addWarning(fieldPrefix+".exit_code_on_found", profile.ExitCodeOnFound,
@@ -152,12 +152,12 @@ func (cv *ConfigValidator) validateFileFilteringLogic(fieldPrefix string, profil
 			"remove include_patterns to include all files by default",
 			"# include_patterns: []  # or remove this line")
 	}
-	
+
 	// Check for conflicting patterns
 	for _, includePattern := range profile.IncludePatterns {
 		for _, excludePattern := range profile.ExcludePatterns {
 			if includePattern == excludePattern {
-				cv.addError(fieldPrefix+".patterns", 
+				cv.addError(fieldPrefix+".patterns",
 					fmt.Sprintf("include: %s, exclude: %s", includePattern, excludePattern),
 					"same pattern in both include and exclude",
 					"remove from one of the lists",
@@ -165,7 +165,7 @@ func (cv *ConfigValidator) validateFileFilteringLogic(fieldPrefix string, profil
 			}
 		}
 	}
-	
+
 	// Check for ineffective patterns
 	for i, pattern := range profile.ExcludePatterns {
 		if pattern == "" {
@@ -174,7 +174,7 @@ func (cv *ConfigValidator) validateFileFilteringLogic(fieldPrefix string, profil
 				"remove empty pattern",
 				"exclude_patterns: [\"*.min.js\", \"vendor/*\"]")
 		}
-		
+
 		if _, err := filepath.Match(pattern, "test"); err != nil {
 			cv.addError(fmt.Sprintf("%s.exclude_patterns[%d]", fieldPrefix, i), pattern,
 				fmt.Sprintf("invalid pattern syntax: %s", err),
@@ -182,7 +182,7 @@ func (cv *ConfigValidator) validateFileFilteringLogic(fieldPrefix string, profil
 				"exclude_patterns: [\"*.min.js\", \"*_test.go\"]")
 		}
 	}
-	
+
 	// Check for redundant directory ignores
 	commonDirs := []string{".git", "node_modules", "vendor"}
 	missingCommonDirs := []string{}
@@ -198,7 +198,7 @@ func (cv *ConfigValidator) validateFileFilteringLogic(fieldPrefix string, profil
 			missingCommonDirs = append(missingCommonDirs, dir)
 		}
 	}
-	
+
 	if len(missingCommonDirs) > 0 {
 		cv.addInfo(fieldPrefix+".directory_ignore_list", profile.DirectoryIgnoreList,
 			fmt.Sprintf("consider ignoring common directories: %s", strings.Join(missingCommonDirs, ", ")),
@@ -216,14 +216,14 @@ func (cv *ConfigValidator) validatePerformanceSettings(fieldPrefix string, profi
 			"use at least 4KB for better performance",
 			"buffer_size: 4096")
 	}
-	
+
 	if profile.BufferSize > 10*1024*1024 { // 10MB
 		cv.addWarning(fieldPrefix+".buffer_size", profile.BufferSize,
 			"very large buffer size may impact memory usage",
 			"consider smaller buffer size unless processing huge files",
 			"buffer_size: 65536  # 64KB")
 	}
-	
+
 	// Check file size limits
 	if profile.MaxFileSize > 0 && profile.MaxFileSize < 1024 {
 		cv.addWarning(fieldPrefix+".max_file_size", profile.MaxFileSize,
@@ -231,7 +231,7 @@ func (cv *ConfigValidator) validatePerformanceSettings(fieldPrefix string, profi
 			"increase file size limit",
 			"max_file_size: 1048576  # 1MB")
 	}
-	
+
 	// Check worker configuration
 	if profile.MaxWorkers > 32 {
 		cv.addWarning(fieldPrefix+".max_workers", profile.MaxWorkers,
@@ -272,7 +272,7 @@ func (cv *ConfigValidator) checkCommonMisconfigurations(fieldPrefix string, prof
 				break
 			}
 		}
-		
+
 		if includesTests {
 			cv.addWarning(fieldPrefix+".include_patterns", profile.IncludePatterns,
 				"including test files in strict linting may be too restrictive",
@@ -280,7 +280,7 @@ func (cv *ConfigValidator) checkCommonMisconfigurations(fieldPrefix string, prof
 				"exclude_patterns: [\"*_test.go\", \"test_*\"]")
 		}
 	}
-	
+
 	// Check for missing common exclusions
 	if len(profile.FileIgnoreList) == 0 && len(profile.ExcludePatterns) == 0 {
 		cv.addInfo(fieldPrefix+".exclusions", nil,
@@ -294,12 +294,12 @@ func (cv *ConfigValidator) checkCommonMisconfigurations(fieldPrefix string, prof
 func (cv *ConfigValidator) validateCrossProfileConsistency(config Config) {
 	// Check for profiles with identical configurations
 	profileConfigs := make(map[string][]string)
-	
+
 	for name, profile := range config.Profiles {
 		key := fmt.Sprintf("%d-%d-%t", profile.MaxEmojiThreshold, len(profile.EmojiAllowlist), profile.FailOnFound)
 		profileConfigs[key] = append(profileConfigs[key], name)
 	}
-	
+
 	for _, profiles := range profileConfigs {
 		if len(profiles) > 1 {
 			cv.addInfo("profiles", profiles,
@@ -363,7 +363,7 @@ func (cv *ConfigValidator) generateSummary() ValidationSummary {
 		Warnings:    0,
 		Infos:       0,
 	}
-	
+
 	for _, issue := range cv.issues {
 		switch issue.Level {
 		case ValidationLevelError:
@@ -374,15 +374,15 @@ func (cv *ConfigValidator) generateSummary() ValidationSummary {
 			summary.Infos++
 		}
 	}
-	
+
 	return summary
 }
 
 // ValidationResult represents the result of configuration validation.
 type ValidationResult struct {
-	IsValid bool               `json:"is_valid"`
-	Issues  []ValidationIssue  `json:"issues"`
-	Summary ValidationSummary  `json:"summary"`
+	IsValid bool              `json:"is_valid"`
+	Issues  []ValidationIssue `json:"issues"`
+	Summary ValidationSummary `json:"summary"`
 }
 
 // ValidationSummary provides a summary of validation results.
@@ -398,7 +398,7 @@ func (vs ValidationSummary) String() string {
 	if vs.TotalIssues == 0 {
 		return "Configuration is valid with no issues"
 	}
-	
+
 	parts := []string{}
 	if vs.Errors > 0 {
 		parts = append(parts, fmt.Sprintf("%d errors", vs.Errors))
@@ -409,7 +409,7 @@ func (vs ValidationSummary) String() string {
 	if vs.Infos > 0 {
 		parts = append(parts, fmt.Sprintf("%d suggestions", vs.Infos))
 	}
-	
+
 	return fmt.Sprintf("Configuration has %s", strings.Join(parts, ", "))
 }
 
@@ -434,12 +434,12 @@ func (vr ValidationResult) String() string {
 	if vr.IsValid && len(vr.Issues) == 0 {
 		return "Configuration is valid"
 	}
-	
+
 	result := fmt.Sprintf("%s:\n", vr.Summary.String())
 	for _, issue := range vr.Issues {
 		result += fmt.Sprintf("  %s\n", issue.String())
 	}
-	
+
 	return result
 }
 
@@ -462,7 +462,7 @@ func ValidateConfigFile(configPath string) ValidationResult {
 			Summary: ValidationSummary{TotalIssues: 1, Errors: 1},
 		}
 	}
-	
+
 	// Validate configuration
 	validator := NewConfigValidator()
 	return validator.ValidateConfig(configResult.Unwrap())
@@ -471,7 +471,7 @@ func ValidateConfigFile(configPath string) ValidationResult {
 // SuggestImprovements analyzes a profile and suggests improvements.
 func SuggestImprovements(profile Profile) []ValidationIssue {
 	validator := NewConfigValidator()
-	
+
 	// Add improvement suggestions
 	if len(profile.EmojiAllowlist) > 20 {
 		validator.addInfo("emoji_allowlist", len(profile.EmojiAllowlist),
@@ -479,13 +479,13 @@ func SuggestImprovements(profile Profile) []ValidationIssue {
 			"consider reducing allowlist or using permissive mode",
 			"max_emoji_threshold: 20\nfail_on_found: false")
 	}
-	
+
 	if len(profile.IncludePatterns) > 10 {
 		validator.addInfo("include_patterns", len(profile.IncludePatterns),
 			"many include patterns may impact performance",
 			"consider consolidating patterns or using exclude patterns instead",
 			"exclude_patterns: [\"vendor/*\", \"*.min.*\"]")
 	}
-	
+
 	return validator.issues
 }
