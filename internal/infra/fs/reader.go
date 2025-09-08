@@ -4,10 +4,13 @@ package fs
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"unicode/utf8"
 
+	ctxutil "github.com/antimoji/antimoji/internal/observability/context"
+	"github.com/antimoji/antimoji/internal/observability/logging"
 	"github.com/antimoji/antimoji/internal/types"
 )
 
@@ -63,8 +66,11 @@ func ReadFileStream(filepath string, chunkSize int) types.Result[<-chan []byte] 
 // IsTextFile determines if a file contains text content by examining its contents.
 // It uses heuristics to detect binary vs text files.
 func IsTextFile(filepath string) bool {
+	ctx := ctxutil.WithFilePath(ctxutil.NewComponentContext("is_text_file", "fs"), filepath)
+
 	file, err := os.Open(filepath) // #nosec G304 - filepath is validated by caller
 	if err != nil {
+		logging.Debug(ctx, "Failed to open file for text detection", "error", err)
 		return false
 	}
 	defer func() {
@@ -75,14 +81,31 @@ func IsTextFile(filepath string) bool {
 	buffer := make([]byte, 1024)
 	n, err := file.Read(buffer)
 	if err != nil && err != io.EOF {
+		logging.Debug(ctx, "Failed to read file for text detection", "error", err)
 		return false
 	}
 
 	if n == 0 {
+		logging.Debug(ctx, "Empty file detected as text", "bytes_read", n)
 		return true // Empty files are considered text
 	}
 
-	return isTextContent(buffer[:n])
+	isText := isTextContent(buffer[:n])
+	logging.Debug(ctx, "File text detection completed",
+		"is_text", isText,
+		"bytes_analyzed", n,
+		"has_null_bytes", bytes.Contains(buffer[:n], []byte{0}),
+		"is_valid_utf8", utf8.Valid(buffer[:n]))
+
+	// Log detailed information for binary files that might contain emoji-like bytes
+	if !isText {
+		logging.Info(ctx, "Binary file detected - skipping emoji processing",
+			"file_path", filepath,
+			"bytes_analyzed", n,
+			"reason", getBinaryFileReason(buffer[:n]))
+	}
+
+	return isText
 }
 
 // GetFileInfo returns information about a file.
@@ -144,4 +167,38 @@ func isTextContent(data []byte) bool {
 	}
 
 	return true
+}
+
+// getBinaryFileReason returns a description of why a file was detected as binary.
+func getBinaryFileReason(data []byte) string {
+	if bytes.Contains(data, []byte{0}) {
+		return "contains_null_bytes"
+	}
+	if !utf8.Valid(data) {
+		return "invalid_utf8"
+	}
+
+	// Count non-printable control characters
+	nonPrintable := 0
+	totalRunes := 0
+
+	for len(data) > 0 {
+		r, size := utf8.DecodeRune(data)
+		if r == utf8.RuneError && size == 1 {
+			nonPrintable++
+		} else if r < 32 && r != '\t' && r != '\n' && r != '\r' {
+			nonPrintable++
+		}
+		totalRunes++
+		data = data[size:]
+	}
+
+	if totalRunes > 0 {
+		percentage := float64(nonPrintable) / float64(totalRunes) * 100
+		if percentage > 30 {
+			return fmt.Sprintf("high_control_chars_%.1f%%", percentage)
+		}
+	}
+
+	return "unknown_binary_pattern"
 }

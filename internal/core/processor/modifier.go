@@ -12,8 +12,18 @@ import (
 	"github.com/antimoji/antimoji/internal/core/allowlist"
 	"github.com/antimoji/antimoji/internal/core/detector"
 	"github.com/antimoji/antimoji/internal/infra/fs"
+	ctxutil "github.com/antimoji/antimoji/internal/observability/context"
+	"github.com/antimoji/antimoji/internal/observability/logging"
 	"github.com/antimoji/antimoji/internal/types"
 )
+
+// max returns the larger of two integers (for Go versions without built-in max)
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
 
 // ModifyConfig contains configuration for file modification operations.
 type ModifyConfig struct {
@@ -59,33 +69,95 @@ func DefaultModifyConfig() ModifyConfig {
 func ModifyFile(filePath string, patterns types.EmojiPatterns, config ModifyConfig,
 	emojiAllowlist *allowlist.Allowlist) types.Result[ModifyResult] {
 
+	// Create context with file path for better tracing
+	ctx := ctxutil.WithFilePath(ctxutil.NewComponentContext("modify_file", "processor"), filePath)
 	result := ModifyResult{
 		FilePath: filePath,
 		Success:  false,
 		Modified: false,
 	}
 
+	logging.Debug(ctx, "Starting file modification",
+		"file_path", filePath,
+		"dry_run", config.DryRun,
+		"create_backup", config.CreateBackup,
+		"respect_allowlist", config.RespectAllowlist)
+
+	// Check if it's a text file before processing
+	if !fs.IsTextFile(filePath) {
+		logging.Debug(ctx, "Skipping binary file", "file_path", filePath)
+		result.Success = true // Consider skipping a binary file as successful
+		return types.Ok(result)
+	}
+
 	// Read original file content
+	logging.Debug(ctx, "About to read file", "file_path", filePath)
 	contentResult := fs.ReadFile(filePath)
 	if contentResult.IsErr() {
+		logging.Debug(ctx, "Failed to read file", "file_path", filePath, "error", contentResult.Error())
 		result.Error = contentResult.Error()
 		return types.Ok(result)
 	}
+	logging.Debug(ctx, "File read completed", "file_path", filePath)
 
 	originalContent := string(contentResult.Unwrap())
+	logging.Debug(ctx, "File content processed",
+		"file_path", filePath,
+		"content_size", len(originalContent))
 
 	// Detect emojis in the content
+	logging.Debug(ctx, "Starting emoji detection", "file_path", filePath)
 	detectionResult := detector.DetectEmojis([]byte(originalContent), patterns)
 	if detectionResult.IsErr() {
+		logging.Debug(ctx, "Failed to detect emojis", "file_path", filePath, "error", detectionResult.Error())
 		result.Error = detectionResult.Error()
 		return types.Ok(result)
 	}
+	logging.Debug(ctx, "Emoji detection completed", "file_path", filePath)
 
 	detection := detectionResult.Unwrap()
+	logging.Debug(ctx, "Emoji detection results processed",
+		"file_path", filePath,
+		"emojis_found", detection.TotalCount)
+
+	// Log detailed emoji information if any are found
+	if detection.TotalCount > 0 {
+		logging.Info(ctx, "Emojis detected in file",
+			"file_path", filePath,
+			"total_emojis", detection.TotalCount,
+			"unique_emojis", detection.UniqueCount,
+			"content_size", detection.ContentSize,
+			"patterns_applied", detection.PatternsApplied)
+
+		// Log each detected emoji for debugging
+		for i, emoji := range detection.Emojis {
+			logFields := []interface{}{
+				"file_path", filePath,
+				"emoji_index", i + 1,
+				"emoji_text", emoji.Emoji,
+				"emoji_category", string(emoji.Category),
+				"start_pos", emoji.Start,
+				"end_pos", emoji.End,
+				"line", emoji.Line,
+				"column", emoji.Column,
+				"unicode_codepoints", getUnicodeCodepoints(emoji.Emoji),
+			}
+
+			// Add debug info if available
+			if emoji.DebugInfo != nil {
+				for key, value := range emoji.DebugInfo {
+					logFields = append(logFields, "debug_"+key, value)
+				}
+			}
+
+			logging.Debug(ctx, "Emoji detected", logFields...)
+		}
+	}
 
 	// Apply allowlist filtering if configured
 	// When respecting allowlist, we need to create a new detection result with only non-allowed emojis
 	if config.RespectAllowlist && emojiAllowlist != nil {
+		logging.Debug(ctx, "Processing allowlist filtering", "file_path", filePath)
 		filteredEmojis := make([]types.EmojiMatch, 0)
 		for _, emoji := range detection.Emojis {
 			if !emojiAllowlist.IsAllowed(emoji.Emoji) {
@@ -102,13 +174,22 @@ func ModifyFile(filePath string, patterns types.EmojiPatterns, config ModifyConf
 			Success:        detection.Success,
 		}
 		detection.Finalize()
+		logging.Debug(ctx, "Allowlist filtering completed",
+			"file_path", filePath,
+			"emojis_after_filtering", detection.TotalCount)
 	}
 
 	// If no emojis to remove, return success without modification
 	if detection.TotalCount == 0 {
+		logging.Debug(ctx, "No emojis to remove", "file_path", filePath)
 		result.Success = true
 		return types.Ok(result)
 	}
+
+	logging.Debug(ctx, "Emojis will be removed",
+		"file_path", filePath,
+		"emojis_to_remove", detection.TotalCount,
+		"replacement", config.Replacement)
 
 	// Create backup if requested
 	if config.CreateBackup {
@@ -150,6 +231,12 @@ func ModifyFile(filePath string, patterns types.EmojiPatterns, config ModifyConf
 	result.Modified = true
 	result.EmojisRemoved = detection.TotalCount
 
+	logging.Debug(ctx, "File modification completed successfully",
+		"file_path", filePath,
+		"emojis_removed", detection.TotalCount,
+		"backup_created", result.BackupPath != "",
+		"dry_run", config.DryRun)
+
 	return types.Ok(result)
 }
 
@@ -157,12 +244,34 @@ func ModifyFile(filePath string, patterns types.EmojiPatterns, config ModifyConf
 func ModifyFiles(filePaths []string, patterns types.EmojiPatterns, config ModifyConfig,
 	emojiAllowlist *allowlist.Allowlist) []ModifyResult {
 
+	// Create context for batch processing
+	ctx := ctxutil.NewComponentContext("process_files_batch", "processor")
 	results := make([]ModifyResult, 0, len(filePaths))
+	totalFiles := len(filePaths)
+	processedFiles := 0
 
-	for _, filePath := range filePaths {
+	for i, filePath := range filePaths {
+		// Log progress for every file to see where it's hanging
+		logging.Debug(ctx, "Processing file",
+			"file_index", i+1,
+			"total_files", totalFiles,
+			"file_path", filePath,
+			"progress_percentage", float64(i)/float64(totalFiles)*100)
+
 		modifyResult := ModifyFile(filePath, patterns, config, emojiAllowlist)
 		if modifyResult.IsOk() {
-			results = append(results, modifyResult.Unwrap())
+			result := modifyResult.Unwrap()
+			results = append(results, result)
+			processedFiles++
+
+			// Log completion of each file
+			logging.Debug(ctx, "File processing completed",
+				"file_path", filePath,
+				"success", result.Success,
+				"modified", result.Modified,
+				"emojis_removed", result.EmojisRemoved,
+				"file_index", i+1,
+				"total_files", totalFiles)
 		} else {
 			// This shouldn't happen with current implementation
 			errorResult := ModifyResult{
@@ -171,8 +280,16 @@ func ModifyFiles(filePaths []string, patterns types.EmojiPatterns, config Modify
 				Error:    modifyResult.Error(),
 			}
 			results = append(results, errorResult)
+			logging.Debug(ctx, "Error processing file",
+				"file_path", filePath,
+				"error", modifyResult.Error(),
+				"file_index", i+1,
+				"total_files", totalFiles)
 		}
 	}
+
+	// Final progress update
+	fmt.Printf("Processing files: 100.0%% (%d/%d) - Complete!\n", totalFiles, totalFiles)
 
 	return results
 }
@@ -293,4 +410,13 @@ func RemoveEmojis(content string, detectionResult types.DetectionResult, replace
 	}
 
 	return result
+}
+
+// getUnicodeCodepoints returns the Unicode code points for debugging emoji detection.
+func getUnicodeCodepoints(text string) []string {
+	var codepoints []string
+	for _, r := range text {
+		codepoints = append(codepoints, fmt.Sprintf("U+%04X", r))
+	}
+	return codepoints
 }
