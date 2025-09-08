@@ -42,10 +42,12 @@ Antimoji is a high-performance emoji detection and removal tool built with Go us
 
 ### CLI Interface
 - **Multiple Commands**: `scan` for detection, `clean` for removal, `generate` for configuration, `setup-lint` for automated setup
-- **Output Formats**: Table, JSON, and CSV formats
+- **Output Formats**: Table, JSON, and CSV formats with colored user-friendly display
 - **Configuration Profiles**: Default, strict, and CI/CD profiles
 - **Performance Statistics**: Built-in benchmarking and metrics
 - **Dry-Run Mode**: Preview changes without file modification
+- **Advanced Logging**: OpenTelemetry compliant structured logging with multiple levels
+- **Debugging Support**: Comprehensive Unicode detection debugging and binary file analysis
 
 ### Linting & Integration
 - **CI/CD Linting**: Designed for automated emoji policy enforcement
@@ -109,11 +111,14 @@ antimoji scan .
 # Scan specific files
 antimoji scan file.go README.md
 
-# Recursive scan with statistics
-antimoji scan --recursive --stats src/
+# Recursive scan with statistics and verbose output
+antimoji scan --recursive --stats --verbose src/
 
-# JSON output for automation
-antimoji scan --format json .
+# JSON output for automation with debug logging
+antimoji scan --format json --log-level=info .
+
+# Debug emoji detection issues
+antimoji scan --log-level=debug --verbose .
 ```
 
 ### Remove Emojis
@@ -124,11 +129,14 @@ antimoji clean --dry-run .
 # Remove emojis with backup
 antimoji clean --backup --in-place .
 
-# Custom replacement text
-antimoji clean --replace "[EMOJI]" --in-place .
+# Custom replacement text with verbose output
+antimoji clean --replace "[EMOJI]" --in-place --verbose .
 
-# Respect allowlist configuration
-antimoji clean --respect-allowlist --in-place .
+# Respect allowlist configuration with logging
+antimoji clean --respect-allowlist --in-place --log-level=info .
+
+# Debug emoji removal issues
+antimoji clean --dry-run --log-level=debug --verbose .
 ```
 
 ## Automated Linting Setup
@@ -195,6 +203,69 @@ antimoji generate --type=ci-lint --output=.antimoji.yaml .
 # docs-only  - Only allow emojis found in documentation
 # minimal    - Only frequently used emojis
 # full       - All found emojis with categorization
+```
+
+## Logging and Debugging
+
+Antimoji provides comprehensive logging and debugging capabilities for troubleshooting and monitoring:
+
+### Logging Levels
+
+```bash
+# Silent mode (default) - no diagnostic output
+antimoji scan --log-level=silent .
+
+# Info mode - basic operation information
+antimoji scan --log-level=info .
+
+# Debug mode - detailed diagnostic information
+antimoji scan --log-level=debug .
+
+# Error mode - only errors and warnings
+antimoji scan --log-level=error .
+```
+
+### Logging Formats
+
+```bash
+# JSON format (default) - structured logs for monitoring
+antimoji scan --log-format=json --log-level=info .
+
+# Text format - human-readable logs for development
+antimoji scan --log-format=text --log-level=info .
+```
+
+### Debugging Emoji Detection Issues
+
+```bash
+# Debug specific file with detailed Unicode information
+antimoji clean --dry-run --log-level=debug --verbose specific-file.go
+
+# Monitor binary file detection
+antimoji scan --log-level=debug . 2>&1 | grep "Binary file"
+
+# Track emoji detection with Unicode code points
+antimoji scan --log-level=debug . 2>&1 | grep "unicode_codepoints"
+```
+
+### User Output vs Diagnostic Logging
+
+Antimoji separates user-facing output from diagnostic logging:
+
+- **User Output**: Colored, formatted messages to stdout/stderr for human consumption
+- **Diagnostic Logging**: Structured JSON logs with OpenTelemetry compliance for monitoring
+
+```bash
+# Example combined output:
+$ antimoji clean --dry-run --log-level=info --verbose .
+
+# User output (colored, formatted):
+INFO: File discovery completed for cleaning - files found: 42
+✓ Summary: would remove 5 emojis from 42 files (2 modified, 0 errors)
+
+# Diagnostic logs (structured JSON):
+{"level":"INFO","msg":"Starting clean operation","operation":"clean","component":"cli"}
+{"level":"DEBUG","msg":"Emoji detected","file_path":"test.go","unicode_codepoints":["U+1F600"]}
 ```
 
 ## Configuration
@@ -362,7 +433,7 @@ jobs:
         run: antimoji generate --type=ci-lint --output=.antimoji.yaml .
         
       - name: Lint for Emojis
-        run: antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 --format=json .
+        run: antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 --format=json --log-level=info .
 ```
 
 **GitLab CI Example:**
@@ -373,7 +444,7 @@ emoji-lint:
   script:
     - go install github.com/jamesainslie/antimoji/cmd/antimoji@latest
     - antimoji generate --type=ci-lint --output=.antimoji.yaml .
-    - antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 .
+    - antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 --log-level=info .
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
@@ -388,7 +459,7 @@ pipeline {
             steps {
                 sh 'go install github.com/jamesainslie/antimoji/cmd/antimoji@latest'
                 sh 'antimoji generate --type=ci-lint --output=.antimoji.yaml .'
-                sh 'antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 .'
+                sh 'antimoji scan --config=.antimoji.yaml --profile=ci-lint --threshold=0 --log-level=info .'
             }
         }
     }
@@ -402,7 +473,7 @@ FROM golang:1.21-alpine AS linter
 RUN go install github.com/jamesainslie/antimoji/cmd/antimoji@latest
 COPY . /app
 WORKDIR /app
-RUN antimoji scan --threshold=0 --ignore-allowlist .
+RUN antimoji scan --threshold=0 --ignore-allowlist --log-level=info .
 ```
 
 ## Real-World Examples
@@ -515,13 +586,14 @@ Antimoji is optimized for high-performance processing:
 
 ## Architecture
 
-Antimoji follows clean architecture principles with functional programming:
+Antimoji follows clean architecture principles with functional programming and comprehensive observability:
 
 ```
-CLI Layer          → Cobra commands, Viper config
-Application Layer  → Command handlers, Config manager
+CLI Layer          → Cobra commands, User output, Viper config
+Application Layer  → Command handlers, Config manager, Context propagation
 Business Logic     → Emoji detector, File processor, Allowlist manager
 Infrastructure     → File system, Concurrency, Memory management
+Observability      → OTEL logging, Context tracking, User output separation
 ```
 
 ### Key Design Principles
@@ -529,6 +601,8 @@ Infrastructure     → File system, Concurrency, Memory management
 - **Performance First**: Zero-copy operations and memory pooling
 - **Safety Emphasis**: Atomic operations and comprehensive error handling
 - **Test-Driven**: 85% minimum test coverage requirement
+- **Observability First**: Structured logging and comprehensive debugging
+- **Separation of Concerns**: User output distinct from diagnostic logging
 
 ## Development
 
@@ -596,6 +670,65 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Testing with [Testify](https://github.com/stretchr/testify)
 - Follows [Semantic Versioning](https://semver.org/)
 - Inspired by functional programming principles
+
+## Troubleshooting
+
+### Common Issues
+
+#### Inconsistent Results Between Scan and Clean
+
+If scan and clean report different emoji counts:
+
+```bash
+# Enable debug logging to identify the issue
+antimoji scan --log-level=debug . 2>&1 | grep -E "(Binary file|Emojis detected)"
+antimoji clean --dry-run --log-level=debug . 2>&1 | grep -E "(Binary file|Emojis detected)"
+```
+
+This will show if binary files are being processed inconsistently.
+
+#### Binary Files Being Processed as Text
+
+If you see emojis detected in binary files (executables, images, etc.):
+
+```bash
+# Check binary file detection
+antimoji scan --log-level=debug suspicious-file 2>&1 | grep "Binary file"
+```
+
+#### Emoji Detection Issues
+
+For detailed emoji detection debugging:
+
+```bash
+# Show Unicode code points for detected emojis
+antimoji scan --log-level=debug file.txt 2>&1 | grep "unicode_codepoints"
+
+# Show which Unicode ranges are matching
+antimoji scan --log-level=debug file.txt 2>&1 | grep "matched_ranges"
+```
+
+#### Performance Issues
+
+For performance analysis:
+
+```bash
+# Enable benchmarking and detailed metrics
+antimoji scan --stats --log-level=info --verbose .
+
+# Monitor processing patterns
+antimoji scan --log-level=debug . 2>&1 | grep "patterns_applied"
+```
+
+### Getting Help
+
+If issues persist:
+
+1. Enable debug logging: `--log-level=debug --verbose`
+2. Check for binary file processing issues
+3. Verify configuration with `--dry-run` mode
+4. Create minimal reproduction case
+5. File an issue with debug logs
 
 ## Support
 

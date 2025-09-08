@@ -171,10 +171,17 @@ repos:
 
 ### Enable Debug Output
 
-Add `--log-level=info` to see what's happening:
+Add logging flags to troubleshoot issues:
 
 ```yaml
+# Basic diagnostic information
 args: [clean, --config=.antimoji.yaml, --profile=zero, --log-level=info, --in-place]
+
+# Detailed debugging with Unicode code points
+args: [clean, --config=.antimoji.yaml, --profile=zero, --log-level=debug, --verbose, --in-place]
+
+# Human-readable text logs instead of JSON
+args: [clean, --config=.antimoji.yaml, --profile=zero, --log-level=info, --log-format=text, --in-place]
 ```
 
 ### Check Configuration
