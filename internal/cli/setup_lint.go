@@ -909,7 +909,6 @@ issues:
 	return nil
 }
 
-
 // generateGolangCIConfigForMode creates golangci-lint configuration for antimoji.
 func generateGolangCIConfigForMode(mode LintMode) string {
 	antimojiCmd := detectAntimojiCommand()

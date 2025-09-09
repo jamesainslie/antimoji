@@ -17,7 +17,6 @@ import (
 	"github.com/antimoji/antimoji/internal/types"
 )
 
-
 // ModifyConfig contains configuration for file modification operations.
 type ModifyConfig struct {
 	// Replacement is the string to replace emojis with
