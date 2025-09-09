@@ -167,5 +167,18 @@ This document tracks technical debt, stubbed functionality, and items that need 
 - Items should be removed when completed and verified
 - Priority levels: HIGH (blocks other work), MEDIUM (should be done soon), LOW (nice to have)
 
+## 🔧 Development Standards (Added 2025-09-09)
+
+**Always run before committing:**
+```bash
+# Lint and test on every change
+golangci-lint run    # Must pass with 0 issues
+go test ./... -short # Must pass all tests
+
+# Quality gate checks
+make test-coverage-check  # Must be ≥65%
+make antimoji-lint       # Must pass project linting
+```
+
 **Last Updated**: 2025-09-09  
 **Next Review**: Weekly during refactoring phase
