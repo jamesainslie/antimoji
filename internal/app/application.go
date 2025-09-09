@@ -111,6 +111,15 @@ Built with Go using functional programming principles, Antimoji provides:
 		Version:       a.getBuildVersion(),
 	}
 
+	// Add global persistent flags
+	cmd.PersistentFlags().String("config", "", "config file path")
+	cmd.PersistentFlags().String("profile", "default", "configuration profile")
+	cmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output (deprecated, use --log-level=info)")
+	cmd.PersistentFlags().BoolP("quiet", "q", false, "quiet mode (deprecated, use --log-level=silent)")
+	cmd.PersistentFlags().Bool("dry-run", false, "show what would be changed without modifying files")
+	cmd.PersistentFlags().String("log-level", "silent", "log level (silent, debug, info, warn, error)")
+	cmd.PersistentFlags().String("log-format", "json", "log format (json, text)")
+
 	// Add subcommands with dependency injection
 	cmd.AddCommand(a.createScanCommand())
 	cmd.AddCommand(a.createCleanCommand())
