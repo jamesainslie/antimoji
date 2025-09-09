@@ -111,6 +111,15 @@ Built with Go using functional programming principles, Antimoji provides:
 		Version:       a.getBuildVersion(),
 	}
 
+	// Add global persistent flags (TODO: these will be properly integrated with DI in later PR)
+	cmd.PersistentFlags().String("config", "", "config file path")
+	cmd.PersistentFlags().String("profile", "default", "configuration profile")
+	cmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output (deprecated, use --log-level=info)")
+	cmd.PersistentFlags().BoolP("quiet", "q", false, "quiet mode (deprecated, use --log-level=silent)")
+	cmd.PersistentFlags().Bool("dry-run", false, "show what would be changed without modifying files")
+	cmd.PersistentFlags().String("log-level", "silent", "log level (silent, debug, info, warn, error)")
+	cmd.PersistentFlags().String("log-format", "json", "log format (json, text)")
+
 	// Add subcommands with dependency injection
 	cmd.AddCommand(a.createScanCommand())
 	cmd.AddCommand(a.createCleanCommand())
@@ -136,15 +145,8 @@ func (a *Application) createScanCommand() *cobra.Command {
 }
 
 func (a *Application) createCleanCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "clean",
-		Short: "Clean emojis from files (placeholder - will be refactored)",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			a.deps.UI.Info(a.ctx, "Clean command - dependency injection working!")
-			a.deps.Logger.Info(a.ctx, "Clean command executed with DI", "args", args)
-			return fmt.Errorf("clean command not yet refactored for dependency injection")
-		},
-	}
+	handler := commands.NewCleanHandler(a.deps.Logger, a.deps.UI)
+	return handler.CreateCommand()
 }
 
 func (a *Application) createGenerateCommand() *cobra.Command {
