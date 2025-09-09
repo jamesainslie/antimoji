@@ -89,11 +89,11 @@ Examples:
 }
 
 // Execute runs the scan command logic with dependency injection.
-func (h *ScanHandler) Execute(ctx context.Context, args []string, opts *ScanOptions) error {
+func (h *ScanHandler) Execute(parentCtx context.Context, args []string, opts *ScanOptions) error {
 	startTime := time.Now()
 
 	// Create component context for better tracing
-	ctx = ctxutil.NewComponentContext("scan", "cli")
+	ctx := ctxutil.NewComponentContext("scan", "cli")
 
 	// If no paths provided, use current directory
 	if len(args) == 0 {

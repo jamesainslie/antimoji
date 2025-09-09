@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -86,7 +87,7 @@ func TestDependencies_Validate(t *testing.T) {
 func TestDependencies_Close(t *testing.T) {
 	t.Run("closes without error", func(t *testing.T) {
 		deps := NewTestDependencies()
-		err := deps.Close(nil)
+		err := deps.Close(context.TODO())
 		assert.NoError(t, err)
 	})
 }
