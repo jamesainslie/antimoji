@@ -53,13 +53,13 @@ test-coverage: ## Run tests with coverage report
 	go tool cover -html=coverage.out -o coverage.html
 	go tool cover -func=coverage.out | tail -1
 
-test-coverage-check: ## Check if test coverage meets minimum requirement (60%)
+test-coverage-check: ## Check if test coverage meets minimum requirement (65%)
 	@echo "Checking test coverage..."
 	@go test -coverprofile=coverage.out -covermode=atomic ./... > /dev/null
 	@COVERAGE=$$(go tool cover -func=coverage.out | tail -1 | awk '{print $$3}' | sed 's/%//'); \
 	echo "Current coverage: $${COVERAGE}%"; \
-	if [ "$$(echo "$$COVERAGE < 60" | bc -l)" = "1" ]; then \
-		echo "ERROR: Test coverage $${COVERAGE}% is below required 60%"; \
+	if [ "$$(echo "$$COVERAGE < 65" | bc -l)" = "1" ]; then \
+		echo "ERROR: Test coverage $${COVERAGE}% is below required 65%"; \
 		exit 1; \
 	else \
 		echo "Test coverage $${COVERAGE}% meets requirement"; \
