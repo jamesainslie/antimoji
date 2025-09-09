@@ -69,7 +69,7 @@ Examples:
   antimoji scan --stats .            # Include performance statistics`,
 		Args: cobra.MinimumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return h.Execute(cmd.Context(), args, opts)
+			return h.Execute(cmd.Context(), cmd, args, opts)
 		},
 	}
 
@@ -89,7 +89,7 @@ Examples:
 }
 
 // Execute runs the scan command logic with dependency injection.
-func (h *ScanHandler) Execute(parentCtx context.Context, args []string, opts *ScanOptions) error {
+func (h *ScanHandler) Execute(parentCtx context.Context, cmd *cobra.Command, args []string, opts *ScanOptions) error {
 	startTime := time.Now()
 
 	// Create component context for better tracing
@@ -103,9 +103,22 @@ func (h *ScanHandler) Execute(parentCtx context.Context, args []string, opts *Sc
 
 	h.logger.Info(ctx, "Starting scan operation", "paths", args, "options", opts)
 
-	// TODO: For now, use default config - this will be replaced with proper CLI flag parsing
+	// Get config and profile from persistent flags
+	configFile, _ := cmd.Root().PersistentFlags().GetString("config")
+	profileName, _ := cmd.Root().PersistentFlags().GetString("profile")
+
+	// Load configuration
 	cfg := config.DefaultConfig()
-	profileName := "default"
+	if configFile != "" {
+		h.logger.Debug(ctx, "Loading configuration file", "config_file", configFile)
+		configResult := config.LoadConfig(configFile)
+		if configResult.IsErr() {
+			h.logger.Error(ctx, "Failed to load configuration", "config_file", configFile, "error", configResult.Error())
+			return fmt.Errorf("failed to load config: %w", configResult.Error())
+		}
+		cfg = configResult.Unwrap()
+		h.logger.Debug(ctx, "Configuration loaded successfully")
+	}
 
 	// Get the specified profile
 	profileResult := config.GetProfile(cfg, profileName)

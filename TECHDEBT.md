@@ -4,6 +4,17 @@ This document tracks technical debt, stubbed functionality, and items that need 
 
 ## 🔄 Refactoring in Progress (2025-09-09)
 
+### PR #8: Dependency Injection Foundation 🚨 FAILING CHECKS
+- **GitHub PR**: https://github.com/jamesainslie/antimoji/pull/8
+- **Status**: 2/18 checks failing (Antimoji Lint + Quality Gate)
+- **Issue**: Refactored app doesn't handle --config flag properly yet
+- **Achievements**: DI foundation + scan command refactored
+- **Next**: Fix flag handling to pass CI checks
+
+### PR #9: Remaining Commands Refactoring 🚧 PLANNED
+- **Branch**: `refactor/remaining-commands` (will be created after PR #8 fixes)
+- **Scope**: Clean, Generate, Setup-lint commands
+
 ### Global State Elimination
 
 #### ✅ Completed
