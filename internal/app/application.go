@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/antimoji/antimoji/internal/app/commands"
 	"github.com/spf13/cobra"
 )
 
@@ -130,15 +131,8 @@ func (a *Application) getBuildVersion() string {
 // as we refactor each command to use dependency injection.
 
 func (a *Application) createScanCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "scan",
-		Short: "Scan files for emojis (placeholder - will be refactored)",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			a.deps.UI.Info(a.ctx, "Scan command - dependency injection working!")
-			a.deps.Logger.Info(a.ctx, "Scan command executed with DI", "args", args)
-			return fmt.Errorf("scan command not yet refactored for dependency injection")
-		},
-	}
+	handler := commands.NewScanHandler(a.deps.Logger, a.deps.UI)
+	return handler.CreateCommand()
 }
 
 func (a *Application) createCleanCommand() *cobra.Command {

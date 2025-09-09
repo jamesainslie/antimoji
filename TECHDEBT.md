@@ -15,14 +15,20 @@ This document tracks technical debt, stubbed functionality, and items that need 
 #### 🚧 In Progress - Global Logger Removal
 **Priority: HIGH**
 - **Issue**: Global logger still exists in `internal/observability/logging/global.go`
-- **Status**: DI foundation created, but global logger not yet removed
+- **Status**: ✅ Scan command refactored, other commands pending
+- **Progress**:
+  - ✅ Created `internal/app/commands/scan.go` with full DI
+  - ✅ Scan command working correctly with dependency injection
+  - 🚧 Clean, Generate, Setup-lint commands still need refactoring
 - **Next Steps**: 
-  1. Refactor all CLI commands to accept logger via DI
-  2. Remove global logger functions and variables
-  3. Update all import statements
+  1. ✅ ~~Refactor scan command~~ 
+  2. 🚧 Refactor clean, generate, setup-lint commands
+  3. Remove global logger functions and variables
+  4. Update all import statements
 - **Files Affected**: 
   - `internal/observability/logging/global.go` (to be removed/refactored)
-  - All CLI command files that need logger injection
+  - `internal/cli/clean.go`, `internal/cli/generate.go` (need refactoring)
+  - Various other files using global logging calls
 - **Validation**: `grep -r "globalLogger" internal/` should return no results
 
 #### 🚧 Pending - Global UI Output Removal  
@@ -38,14 +44,14 @@ This document tracks technical debt, stubbed functionality, and items that need 
 
 #### 🚧 Stubbed Commands Need Implementation
 **Priority: MEDIUM**
-- **Issue**: All CLI commands are currently placeholders that return errors
+- **Issue**: Most CLI commands are currently placeholders that return errors
 - **Location**: `internal/app/application.go` lines 95-145
 - **Stubbed Commands**:
-  - `createScanCommand()` - returns "scan command not yet refactored for dependency injection"
+  - ✅ ~~`createScanCommand()` - refactored with full DI implementation~~
   - `createCleanCommand()` - returns "clean command not yet refactored for dependency injection"  
   - `createGenerateCommand()` - returns "generate command not yet refactored for dependency injection"
   - `createSetupLintCommand()` - returns "setup-lint command not yet refactored for dependency injection"
-- **Next Steps**: Refactor each command to use dependency injection instead of global state
+- **Next Steps**: Refactor remaining commands to use dependency injection instead of global state
 - **Dependencies**: Global state removal must be completed first
 
 ### Configuration Management
