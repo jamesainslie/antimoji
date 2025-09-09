@@ -48,14 +48,24 @@ func TestApplication_Run(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("returns error for placeholder commands", func(t *testing.T) {
+	t.Run("scan command works with dependency injection", func(t *testing.T) {
 		deps := NewTestDependencies()
 		app, err := New(deps)
 		require.NoError(t, err)
 
+		// Scan command should work now with dependency injection
 		err = app.Run([]string{"scan", "."})
+		assert.NoError(t, err)
+	})
+
+	t.Run("returns error for remaining placeholder commands", func(t *testing.T) {
+		deps := NewTestDependencies()
+		app, err := New(deps)
+		require.NoError(t, err)
+
+		err = app.Run([]string{"clean", "."})
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "scan command not yet refactored")
+		assert.Contains(t, err.Error(), "clean command not yet refactored")
 	})
 }
 
