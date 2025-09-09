@@ -71,3 +71,6 @@ config.local.yaml
 docs_backup_*/
 bin/
 antimoji
+
+# Refactoring control files (keep local to development)
+.refactor/
