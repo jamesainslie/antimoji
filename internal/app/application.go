@@ -124,7 +124,7 @@ from code files, markdown documents, and other text-based artifacts.
 
 Built with Go using functional programming principles, Antimoji provides:
 - Unicode emoji detection across all major ranges
-- Text emoticon detection (e.g., , , )
+- Text emoticon detection (e.g., :), :D, :()
 - Custom emoji pattern detection (e.g., :party:, :thumbsup:)
 - Configurable allowlists and ignore patterns
 - High-performance concurrent processing
