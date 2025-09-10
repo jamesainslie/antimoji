@@ -58,14 +58,37 @@ func TestApplication_Run(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("returns error for remaining placeholder commands", func(t *testing.T) {
+	t.Run("clean command works with dependency injection", func(t *testing.T) {
 		deps := NewTestDependencies()
 		app, err := New(deps)
 		require.NoError(t, err)
 
+		// Clean command should return validation error (requires --in-place or --dry-run)
 		err = app.Run([]string{"clean", "."})
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "clean command not yet refactored")
+		assert.Contains(t, err.Error(), "must specify --in-place")
+	})
+
+	t.Run("generate command uses dependency injection", func(t *testing.T) {
+		deps := NewTestDependencies()
+		app, err := New(deps)
+		require.NoError(t, err)
+
+		// Generate command should work with DI but return placeholder error
+		err = app.Run([]string{"generate", "."})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "complex implementation pending")
+	})
+
+	t.Run("setup-lint command uses dependency injection", func(t *testing.T) {
+		deps := NewTestDependencies()
+		app, err := New(deps)
+		require.NoError(t, err)
+
+		// Setup-lint command should work with DI but return placeholder error
+		err = app.Run([]string{"setup-lint", "."})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "complex implementation pending")
 	})
 }
 

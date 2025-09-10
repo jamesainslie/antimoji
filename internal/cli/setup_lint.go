@@ -275,7 +275,7 @@ func generateZeroToleranceConfig(base config.Config) config.Config {
 		// Emoji detection - detect everything
 		UnicodeEmojis:  true,
 		TextEmoticons:  true,
-		CustomPatterns: []string{"", "", "", "", "", ":warning:", ":check:", ":x:"},
+		CustomPatterns: []string{"", "", "", "", "", "", "", ":x:"},
 
 		// Zero tolerance - empty allowlist
 		EmojiAllowlist: []string{},
@@ -334,7 +334,7 @@ func generateAllowListConfig(base config.Config, allowedEmojis []string) config.
 		// Emoji detection
 		UnicodeEmojis:  true,
 		TextEmoticons:  true,
-		CustomPatterns: []string{"", "", "", "", "", ":warning:", ":check:", ":x:"},
+		CustomPatterns: []string{"", "", "", "", "", "", "", ":x:"},
 
 		// Limited allowlist
 		EmojiAllowlist: allowedEmojis,
@@ -393,7 +393,7 @@ func generatePermissiveConfig(base config.Config) config.Config {
 		// Emoji detection
 		UnicodeEmojis:  true,
 		TextEmoticons:  true,
-		CustomPatterns: []string{"", "", "", "", "", ":warning:", ":check:", ":x:"},
+		CustomPatterns: []string{"", "", "", "", "", "", "", ":x:"},
 
 		// Generous allowlist
 		EmojiAllowlist: []string{
@@ -897,7 +897,7 @@ issues:
 	} else {
 		// File exists and force not set - leave it alone
 		if !quiet {
-			fmt.Printf("✅ golangci-lint configuration already exists: %s\n", configPath)
+			fmt.Printf(" golangci-lint configuration already exists: %s\n", configPath)
 			fmt.Printf("   (Use --force to overwrite, or configure antimoji via pre-commit hooks)\n")
 		}
 	}

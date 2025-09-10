@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/antimoji/antimoji/internal/app/commands"
 	"github.com/spf13/cobra"
@@ -62,8 +63,17 @@ func (a *Application) Run(args []string) error {
 
 // Shutdown gracefully shuts down the application.
 func (a *Application) Shutdown() error {
+	// Create a fresh timeout-bound context for cleanup
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+
+	// Run cleanup with the timeout context
+	err := a.deps.Close(shutdownCtx)
+
+	// Cancel background work after cleanup completes
 	a.cancel()
-	return a.deps.Close(a.ctx)
+
+	return err
 }
 
 // GetDependencies returns the application dependencies (useful for testing).
@@ -80,10 +90,23 @@ func (a *Application) GetRootCommand() *cobra.Command {
 func (a *Application) handleSignals() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(sigChan)
+	defer close(sigChan)
 
 	select {
 	case sig := <-sigChan:
 		a.deps.Logger.Info(a.ctx, "Received shutdown signal", "signal", sig.String())
+
+		// Create a timeout-bound context for shutdown operations
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+
+		// Perform graceful shutdown with timeout
+		if err := a.deps.Close(shutdownCtx); err != nil {
+			a.deps.Logger.Error(shutdownCtx, "Error during shutdown", "error", err)
+		}
+
+		// Cancel background work after shutdown completes
 		a.cancel()
 	case <-a.ctx.Done():
 		// Context was cancelled elsewhere
@@ -101,8 +124,8 @@ from code files, markdown documents, and other text-based artifacts.
 
 Built with Go using functional programming principles, Antimoji provides:
 - Unicode emoji detection across all major ranges
-- Text emoticon detection (,  etc.)
-- Custom emoji pattern detection (, )
+- Text emoticon detection (e.g., , , )
+- Custom emoji pattern detection (e.g., :party:, :thumbsup:)
 - Configurable allowlists and ignore patterns
 - High-performance concurrent processing
 - Git integration and CI/CD pipeline support`,
@@ -145,39 +168,18 @@ func (a *Application) createScanCommand() *cobra.Command {
 }
 
 func (a *Application) createCleanCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "clean",
-		Short: "Clean emojis from files (placeholder - will be refactored)",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			a.deps.UI.Info(a.ctx, "Clean command - dependency injection working!")
-			a.deps.Logger.Info(a.ctx, "Clean command executed with DI", "args", args)
-			return fmt.Errorf("clean command not yet refactored for dependency injection")
-		},
-	}
+	handler := commands.NewCleanHandler(a.deps.Logger, a.deps.UI)
+	return handler.CreateCommand()
 }
 
 func (a *Application) createGenerateCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "generate",
-		Short: "Generate configuration (placeholder - will be refactored)",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			a.deps.UI.Info(a.ctx, "Generate command - dependency injection working!")
-			a.deps.Logger.Info(a.ctx, "Generate command executed with DI", "args", args)
-			return fmt.Errorf("generate command not yet refactored for dependency injection")
-		},
-	}
+	handler := commands.NewGenerateHandler(a.deps.Logger, a.deps.UI)
+	return handler.CreateCommand()
 }
 
 func (a *Application) createSetupLintCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "setup-lint",
-		Short: "Setup linting configuration (placeholder - will be refactored)",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			a.deps.UI.Info(a.ctx, "Setup-lint command - dependency injection working!")
-			a.deps.Logger.Info(a.ctx, "Setup-lint command executed with DI", "args", args)
-			return fmt.Errorf("setup-lint command not yet refactored for dependency injection")
-		},
-	}
+	handler := commands.NewSetupLintHandler(a.deps.Logger, a.deps.UI)
+	return handler.CreateCommand()
 }
 
 func (a *Application) createVersionCommand() *cobra.Command {

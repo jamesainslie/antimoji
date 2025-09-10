@@ -129,14 +129,14 @@ func DefaultEmojiPatterns() types.EmojiPatterns {
 			{Start: 0x2700, End: 0x27BF, Name: "Dingbats"},
 		},
 		EmoticonPatterns: []string{
-			`:)`, `:(`, `:D`, `:P`, `:o`, `:O`, `;)`, `;(`,
-			`=)`, `=(`, `=D`, `=P`, `=o`, `=O`, `>:)`, `>:(`,
-			`:-)`, `:-(`, `:-D`, `:-P`, `:-o`, `:-O`, `;-)`, `;-(`,
+			``, ``, ``, ``, ``, ``, ``, ``,
+			``, ``, ``, ``, ``, ``, ``, ``,
+			``, ``, ``, ``, ``, ``, ``, ``,
 		},
 		CustomPatterns: []string{
-			`:smile:`, `:frown:`, `:thumbs_up:`, `:thumbs_down:`, `:heart:`,
-			`:star:`, `:check:`, `:cross:`, `:warning:`,
-			`:fire:`, `:rocket:`, `:tada:`, `:sparkles:`, `:zap:`,
+			``, ``, ``, ``, ``,
+			``, ``, ``, ``,
+			``, ``, ``, ``, ``,
 		},
 	}
 }
