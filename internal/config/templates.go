@@ -78,7 +78,7 @@ func (tr *TemplateRegistry) registerBuiltInTemplates() {
 			// Emoji detection
 			UnicodeEmojis:  true,
 			TextEmoticons:  true,
-			CustomPatterns: []string{"", "", "", "", "", ":warning:", ":check:", ":x:"},
+			CustomPatterns: []string{"", "", "", "", "", "", "", ":x:"},
 
 			// Zero tolerance policy
 			EmojiAllowlist:    []string{}, // No emojis allowed
@@ -128,7 +128,7 @@ func (tr *TemplateRegistry) registerBuiltInTemplates() {
 			// Emoji detection
 			UnicodeEmojis:  true,
 			TextEmoticons:  true,
-			CustomPatterns: []string{"", "", "", "", "", ":warning:", ":check:", ":x:"},
+			CustomPatterns: []string{"", "", "", "", "", "", "", ":x:"},
 
 			// Allow-list policy (will be customized)
 			EmojiAllowlist:    []string{"", ""}, // Default allowlist
@@ -191,7 +191,7 @@ func (tr *TemplateRegistry) registerBuiltInTemplates() {
 			// Emoji detection
 			UnicodeEmojis:  true,
 			TextEmoticons:  true,
-			CustomPatterns: []string{"", "", "", "", "", ":warning:", ":check:", ":x:"},
+			CustomPatterns: []string{"", "", "", "", "", "", "", ":x:"},
 
 			// Permissive policy
 			EmojiAllowlist: []string{

@@ -30,8 +30,9 @@ func NewConfigAnalyzer(profile config.Profile, targetDir string) *ConfigAnalyzer
 // AnalyzeConfiguration performs comprehensive analysis of the configuration.
 func (ca *ConfigAnalyzer) AnalyzeConfiguration() ConfigurationAnalysis {
 	analysis := ConfigurationAnalysis{
-		Profile:   ca.profile,
-		TargetDir: ca.targetDir,
+		Profile:         ca.profile,
+		TargetDir:       ca.targetDir,
+		Recommendations: []Recommendation{}, // Initialize as empty slice, not nil
 	}
 
 	// Analyze emoji policy

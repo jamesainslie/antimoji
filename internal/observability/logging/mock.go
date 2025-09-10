@@ -6,11 +6,16 @@ import (
 	"sync"
 )
 
-// MockLogger is a mock implementation of Logger for testing.
-type MockLogger struct {
+// mockCore holds the shared state for all derived MockLogger instances.
+type mockCore struct {
 	mu      sync.RWMutex
 	logs    []LogEntry
 	enabled bool
+}
+
+// MockLogger is a mock implementation of Logger for testing.
+type MockLogger struct {
+	core    *mockCore
 	kvPairs []any
 	ctx     context.Context
 }
@@ -26,88 +31,127 @@ type LogEntry struct {
 // NewMockLogger creates a new mock logger.
 func NewMockLogger() *MockLogger {
 	return &MockLogger{
-		logs:    make([]LogEntry, 0),
-		enabled: true,
-		ctx:     context.Background(),
+		core: &mockCore{
+			logs:    make([]LogEntry, 0),
+			enabled: true,
+		},
+		ctx: context.Background(),
 	}
 }
 
 // Debug logs a debug message to the mock.
 func (m *MockLogger) Debug(ctx context.Context, msg string, keysAndValues ...any) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	// Prefer bound context when available, fall back to parameter or Background
+	effectiveCtx := m.ctx
+	if effectiveCtx == nil {
+		if ctx != nil {
+			effectiveCtx = ctx
+		} else {
+			effectiveCtx = context.Background()
+		}
+	}
 
-	if m.enabled {
+	m.core.mu.Lock()
+	defer m.core.mu.Unlock()
+
+	if m.core.enabled {
 		allKV := append(m.kvPairs, keysAndValues...)
-		m.logs = append(m.logs, LogEntry{
+		m.core.logs = append(m.core.logs, LogEntry{
 			Level:         LevelDebug,
 			Message:       msg,
 			KeysAndValues: allKV,
-			Context:       ctx,
+			Context:       effectiveCtx,
 		})
 	}
 }
 
 // Info logs an info message to the mock.
 func (m *MockLogger) Info(ctx context.Context, msg string, keysAndValues ...any) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	// Prefer bound context when available, fall back to parameter or Background
+	effectiveCtx := m.ctx
+	if effectiveCtx == nil {
+		if ctx != nil {
+			effectiveCtx = ctx
+		} else {
+			effectiveCtx = context.Background()
+		}
+	}
 
-	if m.enabled {
+	m.core.mu.Lock()
+	defer m.core.mu.Unlock()
+
+	if m.core.enabled {
 		allKV := append(m.kvPairs, keysAndValues...)
-		m.logs = append(m.logs, LogEntry{
+		m.core.logs = append(m.core.logs, LogEntry{
 			Level:         LevelInfo,
 			Message:       msg,
 			KeysAndValues: allKV,
-			Context:       ctx,
+			Context:       effectiveCtx,
 		})
 	}
 }
 
 // Warn logs a warning message to the mock.
 func (m *MockLogger) Warn(ctx context.Context, msg string, keysAndValues ...any) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	// Prefer bound context when available, fall back to parameter or Background
+	effectiveCtx := m.ctx
+	if effectiveCtx == nil {
+		if ctx != nil {
+			effectiveCtx = ctx
+		} else {
+			effectiveCtx = context.Background()
+		}
+	}
 
-	if m.enabled {
+	m.core.mu.Lock()
+	defer m.core.mu.Unlock()
+
+	if m.core.enabled {
 		allKV := append(m.kvPairs, keysAndValues...)
-		m.logs = append(m.logs, LogEntry{
+		m.core.logs = append(m.core.logs, LogEntry{
 			Level:         LevelWarn,
 			Message:       msg,
 			KeysAndValues: allKV,
-			Context:       ctx,
+			Context:       effectiveCtx,
 		})
 	}
 }
 
 // Error logs an error message to the mock.
 func (m *MockLogger) Error(ctx context.Context, msg string, keysAndValues ...any) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	// Prefer bound context when available, fall back to parameter or Background
+	effectiveCtx := m.ctx
+	if effectiveCtx == nil {
+		if ctx != nil {
+			effectiveCtx = ctx
+		} else {
+			effectiveCtx = context.Background()
+		}
+	}
 
-	if m.enabled {
+	m.core.mu.Lock()
+	defer m.core.mu.Unlock()
+
+	if m.core.enabled {
 		allKV := append(m.kvPairs, keysAndValues...)
-		m.logs = append(m.logs, LogEntry{
+		m.core.logs = append(m.core.logs, LogEntry{
 			Level:         LevelError,
 			Message:       msg,
 			KeysAndValues: allKV,
-			Context:       ctx,
+			Context:       effectiveCtx,
 		})
 	}
 }
 
 // With returns a logger with the given key-value pairs added.
 func (m *MockLogger) With(keysAndValues ...any) Logger {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
+	// No need to lock here since we're only reading immutable fields and creating a new logger
 	newKV := make([]any, len(m.kvPairs)+len(keysAndValues))
 	copy(newKV, m.kvPairs)
 	copy(newKV[len(m.kvPairs):], keysAndValues)
 
 	return &MockLogger{
-		logs:    m.logs, // Share the same log slice
-		enabled: m.enabled,
+		core:    m.core, // Share the same core (with shared mutex, logs, and enabled state)
 		kvPairs: newKV,
 		ctx:     m.ctx,
 	}
@@ -115,42 +159,42 @@ func (m *MockLogger) With(keysAndValues ...any) Logger {
 
 // WithContext returns a logger that uses the given context.
 func (m *MockLogger) WithContext(ctx context.Context) Logger {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+	// Copy kvPairs to avoid shared mutation between logger instances
+	kvCopy := make([]any, len(m.kvPairs))
+	copy(kvCopy, m.kvPairs)
 
 	return &MockLogger{
-		logs:    m.logs, // Share the same log slice
-		enabled: m.enabled,
-		kvPairs: m.kvPairs,
+		core:    m.core, // Share the same core (with shared mutex, logs, and enabled state)
+		kvPairs: kvCopy,
 		ctx:     ctx,
 	}
 }
 
 // IsEnabled returns true if the logger is enabled.
 func (m *MockLogger) IsEnabled(level LogLevel) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	return m.enabled
+	m.core.mu.RLock()
+	defer m.core.mu.RUnlock()
+	return m.core.enabled
 }
 
 // GetLogs returns all logged entries for testing verification.
 func (m *MockLogger) GetLogs() []LogEntry {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+	m.core.mu.RLock()
+	defer m.core.mu.RUnlock()
 
 	// Return a copy to prevent race conditions
-	logs := make([]LogEntry, len(m.logs))
-	copy(logs, m.logs)
+	logs := make([]LogEntry, len(m.core.logs))
+	copy(logs, m.core.logs)
 	return logs
 }
 
 // GetLogsByLevel returns all logged entries for a specific level.
 func (m *MockLogger) GetLogsByLevel(level LogLevel) []LogEntry {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+	m.core.mu.RLock()
+	defer m.core.mu.RUnlock()
 
 	var filtered []LogEntry
-	for _, log := range m.logs {
+	for _, log := range m.core.logs {
 		if log.Level == level {
 			filtered = append(filtered, log)
 		}
@@ -160,24 +204,24 @@ func (m *MockLogger) GetLogsByLevel(level LogLevel) []LogEntry {
 
 // Reset clears all logged entries.
 func (m *MockLogger) Reset() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.logs = m.logs[:0]
+	m.core.mu.Lock()
+	defer m.core.mu.Unlock()
+	m.core.logs = m.core.logs[:0]
 }
 
 // SetEnabled controls whether the logger is enabled.
 func (m *MockLogger) SetEnabled(enabled bool) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.enabled = enabled
+	m.core.mu.Lock()
+	defer m.core.mu.Unlock()
+	m.core.enabled = enabled
 }
 
 // HasLogWithMessage checks if any log entry contains the given message.
 func (m *MockLogger) HasLogWithMessage(message string) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+	m.core.mu.RLock()
+	defer m.core.mu.RUnlock()
 
-	for _, log := range m.logs {
+	for _, log := range m.core.logs {
 		if log.Message == message {
 			return true
 		}
@@ -187,10 +231,10 @@ func (m *MockLogger) HasLogWithMessage(message string) bool {
 
 // HasLogWithLevel checks if any log entry has the given level.
 func (m *MockLogger) HasLogWithLevel(level LogLevel) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+	m.core.mu.RLock()
+	defer m.core.mu.RUnlock()
 
-	for _, log := range m.logs {
+	for _, log := range m.core.logs {
 		if log.Level == level {
 			return true
 		}

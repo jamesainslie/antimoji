@@ -3,8 +3,9 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
+	"strings"
 	"time"
 
 	"github.com/antimoji/antimoji/internal/config"
@@ -32,6 +33,9 @@ type ScanOptions struct {
 	Benchmark       bool
 	Workers         int
 }
+
+// ErrEmojiThresholdExceeded indicates the total emoji count exceeded the provided threshold.
+var ErrEmojiThresholdExceeded = errors.New("emoji threshold exceeded")
 
 // ScanHandler handles the scan command with dependency injection.
 type ScanHandler struct {
@@ -64,10 +68,12 @@ Examples:
   antimoji scan .                    # Scan current directory
   antimoji scan file.go              # Scan specific file
   antimoji scan --recursive src/     # Scan directory recursively
-  antimoji scan --format json .     # Output results as JSON
+  antimoji scan --format table .    # Output results as a table
   antimoji scan --count-only .       # Show only emoji counts
   antimoji scan --stats .            # Include performance statistics`,
-		Args: cobra.MinimumNArgs(0),
+		Args:          cobra.MinimumNArgs(0),
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return h.Execute(cmd.Context(), cmd, args, opts)
 		},
@@ -92,8 +98,21 @@ Examples:
 func (h *ScanHandler) Execute(parentCtx context.Context, cmd *cobra.Command, args []string, opts *ScanOptions) error {
 	startTime := time.Now()
 
-	// Create component context for better tracing
-	ctx := ctxutil.NewComponentContext("scan", "cli")
+	// Validate output format (table-only for now)
+	switch strings.ToLower(opts.Format) {
+	case "table":
+		// ok
+	default:
+		return fmt.Errorf("unsupported format %q; supported: table", opts.Format)
+	}
+
+	// Derive from parent for cancellation/values, enhance with component context
+	ctx := parentCtx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = ctxutil.WithOperation(ctx, "scan")
+	ctx = ctxutil.WithComponent(ctx, "cli")
 
 	// If no paths provided, use current directory
 	if len(args) == 0 {
@@ -202,7 +221,7 @@ func (h *ScanHandler) Execute(parentCtx context.Context, cmd *cobra.Command, arg
 				"threshold", opts.Threshold,
 				"found", totalEmojis)
 			h.ui.Error(ctx, "Emoji threshold exceeded: found %d emojis, threshold is %d", totalEmojis, opts.Threshold)
-			os.Exit(1)
+			return fmt.Errorf("%w: found %d emojis (threshold %d)", ErrEmojiThresholdExceeded, totalEmojis, opts.Threshold)
 		}
 	}
 
@@ -233,6 +252,14 @@ func (h *ScanHandler) filterResultsThroughAllowlist(ctx context.Context, results
 		newResult := result
 		newResult.DetectionResult.Emojis = filteredEmojis
 		newResult.DetectionResult.TotalCount = len(filteredEmojis)
+
+		// Recompute unique count
+		uniq := make(map[string]struct{}, len(filteredEmojis))
+		for _, e := range filteredEmojis {
+			uniq[e.Emoji] = struct{}{}
+		}
+		newResult.DetectionResult.UniqueCount = len(uniq)
+
 		filtered = append(filtered, newResult)
 	}
 
@@ -281,7 +308,12 @@ func (h *ScanHandler) displayResults(ctx context.Context, results []types.Proces
 	// Show stats if requested
 	if opts.Stats {
 		h.ui.Info(ctx, "Processing time: %v", duration)
-		h.ui.Info(ctx, "Files per second: %.2f", float64(totalFiles)/duration.Seconds())
+		secs := duration.Seconds()
+		fps := 0.0
+		if secs > 0 {
+			fps = float64(totalFiles) / secs
+		}
+		h.ui.Info(ctx, "Files per second: %.2f", fps)
 	}
 
 	return nil

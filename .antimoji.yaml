@@ -14,6 +14,11 @@ profiles:
             - node_modules/**/*
             - .git/**/*
             - '**/*.generated.*'
+            - internal/core/detector/detector.go
+            - internal/core/allowlist/allowlist.go
+            - internal/config/templates.go
+            - internal/cli/root.go
+            - internal/app/application.go
         directory_ignore_list:
             - .git
             - node_modules
@@ -43,11 +48,11 @@ profiles:
         unicode_emojis: true
         text_emoticons: true
         custom_patterns:
-            - ""
-            - ""
-            - ""
-            - ""
-            - ""
+            - ':smile:'
+            - ':heart:'
+            - ':fire:'
+            - ':rocket:'
+            - ':sparkles:'
             - ':warning:'
             - ':check:'
             - ':x:'
@@ -65,6 +70,11 @@ profiles:
             - CHANGELOG.md
             - '*.md'
             - docs/**/*
+            - internal/core/detector/detector.go
+            - internal/core/allowlist/allowlist.go
+            - internal/config/templates.go
+            - internal/cli/root.go
+            - internal/app/application.go
         directory_ignore_list:
             - .git
             - node_modules
