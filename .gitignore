@@ -71,3 +71,4 @@ config.local.yaml
 docs_backup_*/
 bin/
 antimoji
+.refactor/

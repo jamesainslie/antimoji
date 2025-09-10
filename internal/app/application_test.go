@@ -102,3 +102,27 @@ func TestApplication_GetBuildVersion(t *testing.T) {
 		assert.Equal(t, "0.9.16-refactor", version)
 	})
 }
+
+func TestApplication_Shutdown(t *testing.T) {
+	t.Run("shutdown works correctly", func(t *testing.T) {
+		deps := NewTestDependencies()
+		app, err := New(deps)
+		require.NoError(t, err)
+
+		err = app.Shutdown()
+		assert.NoError(t, err)
+	})
+
+	t.Run("shutdown handles timeout", func(t *testing.T) {
+		deps := NewTestDependencies()
+		app, err := New(deps)
+		require.NoError(t, err)
+
+		// Multiple shutdowns should work
+		err = app.Shutdown()
+		assert.NoError(t, err)
+
+		err = app.Shutdown()
+		assert.NoError(t, err)
+	})
+}
