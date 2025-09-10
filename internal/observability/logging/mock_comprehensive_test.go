@@ -7,6 +7,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Define custom context key types to avoid SA1029 warnings
+type testKeyType string
+type requestIDKeyType string
+type userIDKeyType string
+
+const (
+	testKey      testKeyType      = "test_key"
+	requestIDKey requestIDKeyType = "request_id"
+	userIDKey    userIDKeyType    = "user_id"
+)
+
 func TestNewMockLogger(t *testing.T) {
 	t.Run("creates new mock logger", func(t *testing.T) {
 		logger := NewMockLogger()
@@ -78,7 +89,7 @@ func TestMockLogger_AllMethods(t *testing.T) {
 	})
 
 	t.Run("WithContext method", func(t *testing.T) {
-		ctx := context.WithValue(context.Background(), "test_key", "test_value")
+		ctx := context.WithValue(context.Background(), testKey, "test_value")
 		withLogger := logger.WithContext(ctx)
 
 		assert.NotNil(t, withLogger)
@@ -190,7 +201,7 @@ func TestMockLogger_ContextHandling(t *testing.T) {
 
 	t.Run("handles nil context", func(t *testing.T) {
 		assert.NotPanics(t, func() {
-			logger.Info(nil, "nil context message")
+			logger.Info(context.TODO(), "nil context message")
 		})
 
 		logs := logger.GetLogs()
@@ -200,7 +211,7 @@ func TestMockLogger_ContextHandling(t *testing.T) {
 
 	t.Run("preserves context values", func(t *testing.T) {
 		logger.Reset() // Clear previous logs
-		ctx := context.WithValue(context.Background(), "request_id", "123")
+		ctx := context.WithValue(context.Background(), requestIDKey, "123")
 		logger.Info(ctx, "context message")
 
 		logs := logger.GetLogs()
@@ -210,7 +221,7 @@ func TestMockLogger_ContextHandling(t *testing.T) {
 	})
 
 	t.Run("WithContext creates logger with bound context", func(t *testing.T) {
-		ctx := context.WithValue(context.Background(), "user_id", "456")
+		ctx := context.WithValue(context.Background(), userIDKey, "456")
 		boundLogger := logger.WithContext(ctx)
 
 		boundLogger.Info(context.Background(), "bound context message")

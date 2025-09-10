@@ -146,7 +146,7 @@ func TestGenerateHandler_Execute(t *testing.T) {
 			Type: "allowlist",
 		}
 
-		err := handler.Execute(nil, nil, []string{"."}, opts)
+		err := handler.Execute(context.TODO(), nil, []string{"."}, opts)
 
 		assert.Error(t, err) // Placeholder error
 	})

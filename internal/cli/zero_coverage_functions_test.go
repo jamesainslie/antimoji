@@ -85,7 +85,7 @@ func TestAnalyzeAntimojiConfig_ZeroCoverage(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.NotPanics(t, func() {
-			analyzeAntimojiConfig(configPath, &ReviewData{})
+			_ = analyzeAntimojiConfig(configPath, &ReviewData{}) // Test function call, ignore result
 		})
 	})
 }
@@ -173,7 +173,7 @@ func TestValidateConfigurationFile_ZeroCoverage(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.NotPanics(t, func() {
-			validateConfigurationFile(configPath, &SetupLintOptions{})
+			_ = validateConfigurationFile(configPath, &SetupLintOptions{}) // Test function call, ignore result
 		})
 	})
 }
