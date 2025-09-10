@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -18,6 +19,12 @@ var (
 )
 
 func main() {
+	// Build service version with build metadata
+	serviceVersion := version
+	if buildTime != "unknown" || gitCommit != "unknown" {
+		serviceVersion = fmt.Sprintf("%s (built %s, commit %s)", version, buildTime, gitCommit)
+	}
+
 	// Create application configuration
 	config := &app.Config{
 		// Default logging configuration (silent mode)
@@ -29,11 +36,11 @@ func main() {
 		UILevel:        ui.OutputNormal,
 		UIWriter:       os.Stdout,
 		UIErrorWriter:  os.Stderr,
-		UIEnableColors: true,
+		UIEnableColors: os.Getenv("NO_COLOR") == "",
 
 		// Application metadata
 		ServiceName:    "antimoji",
-		ServiceVersion: version,
+		ServiceVersion: serviceVersion,
 	}
 
 	// Create dependencies
@@ -42,6 +49,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to initialize application dependencies: %v\n", err)
 		os.Exit(1)
 	}
+
+	// Ensure resources are released on exit
+	defer func() {
+		if err := deps.Close(context.Background()); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close dependencies: %v\n", err)
+		}
+	}()
 
 	// Create application
 	application, err := app.New(deps)

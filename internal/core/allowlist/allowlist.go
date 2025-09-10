@@ -140,14 +140,14 @@ func isInvisibleUnicode(r rune) bool {
 func CreateDefaultAllowlist() *Allowlist {
 	patterns := []string{
 		// Common status indicators
-		"✅", "❌", "⚠️", "ℹ️",
+		"", "", "", "ℹ️",
 		// Version control and CI/CD
-		"🔥", "🚀", "⭐", "🐛", "✨", "🎉",
+		"", "", "⭐", "", "", "",
 		// Documentation
-		"📝", "📚", "🔧", "⚙️",
+		"", "", "", "",
 		// Common custom patterns
-		":white_check_mark:", ":x:", ":warning:", ":information_source:",
-		":fire:", ":rocket:", ":star:", ":sparkles:", ":bug:", ":sparkles:",
+		":white_check_mark:", ":x:", "", ":information_source:",
+		"", "", "", "", ":bug:", "",
 	}
 
 	return NewAllowlist(patterns).Unwrap()

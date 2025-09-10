@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/antimoji/antimoji/internal/observability/logging"
 	"github.com/antimoji/antimoji/internal/ui"
@@ -40,11 +41,17 @@ func NewDependencies(config *Config) (*Dependencies, error) {
 		return nil, fmt.Errorf("config cannot be nil")
 	}
 
+	// Ensure LogOutput is non-nil
+	logOutput := config.LogOutput
+	if logOutput == nil {
+		logOutput = os.Stderr
+	}
+
 	// Create logger
 	loggerConfig := &logging.Config{
 		Level:          config.LogLevel,
 		Format:         config.LogFormat,
-		Output:         config.LogOutput,
+		Output:         logOutput,
 		ServiceName:    config.ServiceName,
 		ServiceVersion: config.ServiceVersion,
 	}
@@ -54,11 +61,22 @@ func NewDependencies(config *Config) (*Dependencies, error) {
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
 
+	// Ensure UI writers are non-nil
+	uiWriter := config.UIWriter
+	if uiWriter == nil {
+		uiWriter = os.Stdout
+	}
+
+	uiErrorWriter := config.UIErrorWriter
+	if uiErrorWriter == nil {
+		uiErrorWriter = os.Stderr
+	}
+
 	// Create UI output
 	uiConfig := &ui.Config{
 		Level:        config.UILevel,
-		Writer:       config.UIWriter,
-		ErrorWriter:  config.UIErrorWriter,
+		Writer:       uiWriter,
+		ErrorWriter:  uiErrorWriter,
 		EnableColors: config.UIEnableColors,
 	}
 
