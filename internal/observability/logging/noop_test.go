@@ -62,15 +62,16 @@ func TestNewNoOpLogger(t *testing.T) {
 		assert.False(t, logger.IsEnabled(LevelError))
 	})
 
-	t.Run("no-op logger handles nil context", func(t *testing.T) {
+	t.Run("no-op logger handles TODO context", func(t *testing.T) {
 		logger := newNoOpLogger()
+		ctx := context.TODO()
 
 		assert.NotPanics(t, func() {
-			logger.Info(nil, "message with nil context")
+			logger.Info(ctx, "message with TODO context")
 		})
 
 		assert.NotPanics(t, func() {
-			logger.Error(nil, "error with nil context", "error", "test")
+			logger.Error(ctx, "error with TODO context", "error", "test")
 		})
 	})
 }

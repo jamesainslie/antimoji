@@ -142,7 +142,7 @@ func TestCleanHandler_Execute(t *testing.T) {
 			Recursive: true,
 		}
 
-		err := handler.Execute(nil, []string{tempDir}, opts)
+		err := handler.Execute(context.TODO(), []string{tempDir}, opts)
 		assert.NoError(t, err)
 	})
 

@@ -130,7 +130,7 @@ func TestSetupLintHandler_Execute(t *testing.T) {
 			OutputDir: "/tmp/test",
 		}
 
-		err := handler.Execute(nil, nil, []string{"test-path"}, opts)
+		err := handler.Execute(context.TODO(), nil, []string{"test-path"}, opts)
 
 		assert.Error(t, err) // Placeholder error
 	})

@@ -63,7 +63,7 @@ func TestReadFile_Comprehensive(t *testing.T) {
 		restrictedFile := filepath.Join(tempDir, "restricted.txt")
 		err := os.WriteFile(restrictedFile, []byte("restricted"), 0000)
 		require.NoError(t, err)
-		defer os.Chmod(restrictedFile, 0644) // Cleanup
+		defer func() { _ = os.Chmod(restrictedFile, 0644) }() // Cleanup, ignore error
 
 		result := ReadFile(restrictedFile)
 		// May succeed or fail depending on system permissions

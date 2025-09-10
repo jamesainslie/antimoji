@@ -293,29 +293,30 @@ func TestUserOutputImpl_NilContext(t *testing.T) {
 
 	output := NewUserOutput(config)
 
-	t.Run("handles nil context", func(t *testing.T) {
+	t.Run("handles TODO context", func(t *testing.T) {
+		ctx := context.TODO()
 		assert.NotPanics(t, func() {
-			output.Info(nil, "message with nil context")
+			output.Info(ctx, "message with TODO context")
 		})
 
 		assert.NotPanics(t, func() {
-			output.Success(nil, "success with nil context")
+			output.Success(ctx, "success with TODO context")
 		})
 
 		assert.NotPanics(t, func() {
-			output.Warning(nil, "warning with nil context")
+			output.Warning(ctx, "warning with TODO context")
 		})
 
 		assert.NotPanics(t, func() {
-			output.Error(nil, "error with nil context")
+			output.Error(ctx, "error with TODO context")
 		})
 
 		assert.NotPanics(t, func() {
-			output.Result(nil, "result with nil context")
+			output.Result(ctx, "result with TODO context")
 		})
 
 		assert.NotPanics(t, func() {
-			output.Progress(nil, "progress with nil context")
+			output.Progress(ctx, "progress with TODO context")
 		})
 	})
 }
