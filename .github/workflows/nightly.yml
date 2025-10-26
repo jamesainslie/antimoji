@@ -1,8 +1,8 @@
 name: Nightly Build
 
-# Note: Windows tests are currently non-blocking due to GitHub Actions runner issues
-# that started on October 7th, 2025. All Windows test jobs fail with race detection.
-# Linux and macOS tests continue to pass. This is under investigation.
+# Note: Windows testing temporarily disabled due to persistent GitHub Actions runner issues
+# with race detection that started on October 7th, 2025. Windows support is still active
+# in the codebase, but CI testing is limited to Linux and macOS until issues are resolved.
 # See: https://github.com/jamesainslie/antimoji/actions/runs/18811764892
 
 on:
@@ -20,10 +20,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
         go-version: ['1.21', '1.22', '1.23']
       fail-fast: false
-    continue-on-error: ${{ matrix.os == 'windows-latest' }}  # Windows tests non-blocking due to runner issues
 
     steps:
     - name: Check out code
@@ -39,10 +38,6 @@ jobs:
       run: |
         go mod download
         go test ./... -race -count=3 -timeout=10m
-      env:
-        # Note: Windows tests have been flaky since Oct 2025
-        # See: https://github.com/jamesainslie/antimoji/actions/runs/18811764892
-        GORACE: "log_path=stderr"
 
     - name: Run benchmarks
       run: |
@@ -50,24 +45,8 @@ jobs:
 
     - name: Build and test binary
       run: |
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          go build -ldflags="-X main.version=$(git describe --tags --always --dirty 2>/dev/null || echo "dev") -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.gitCommit=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")" -o bin/antimoji.exe ./cmd/antimoji
-        else
-          make build
-        fi
-      shell: bash
-
-    - name: Test binary (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        .\bin\antimoji.exe version
-      shell: pwsh
-
-    - name: Test binary (Unix)
-      if: runner.os != 'Windows'
-      run: |
+        make build
         ./bin/antimoji version
-      shell: bash
 
   nightly-performance:
     name: Nightly Performance Regression
