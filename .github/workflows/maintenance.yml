@@ -44,6 +44,7 @@ jobs:
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
     - name: Test with latest dependencies
+      continue-on-error: true
       run: |
         # Create a test branch for dependency updates
         cp go.mod go.mod.backup
@@ -54,12 +55,11 @@ jobs:
         go mod tidy
 
         # Test with updated dependencies
+        echo "" >> $GITHUB_STEP_SUMMARY
         if go test ./...; then
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ Tests pass with updated dependencies" >> $GITHUB_STEP_SUMMARY
         else
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "❌ Tests fail with updated dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ Tests fail with updated dependencies - manual review needed" >> $GITHUB_STEP_SUMMARY
         fi
 
         # Restore original dependencies
@@ -197,7 +197,7 @@ jobs:
         done
 
     - name: Upload development artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: nightly-build-${{ github.sha }}
         path: dist/
