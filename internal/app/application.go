@@ -124,7 +124,7 @@ from code files, markdown documents, and other text-based artifacts.
 
 Built with Go using functional programming principles, Antimoji provides:
 - Unicode emoji detection across all major ranges
-- Text emoticon detection (e.g., :), :D, :()
+- Text emoticon detection (e.g., , , )
 - Custom emoji pattern detection (e.g., :party:, :thumbsup:)
 - Configurable allowlists and ignore patterns
 - High-performance concurrent processing
@@ -149,6 +149,7 @@ Built with Go using functional programming principles, Antimoji provides:
 	cmd.AddCommand(a.createGenerateCommand())
 	cmd.AddCommand(a.createSetupLintCommand())
 	cmd.AddCommand(a.createVersionCommand())
+	cmd.AddCommand(a.createUpgradeCommand())
 
 	return cmd
 }
@@ -193,4 +194,10 @@ func (a *Application) createVersionCommand() *cobra.Command {
 			return nil
 		},
 	}
+}
+
+func (a *Application) createUpgradeCommand() *cobra.Command {
+	handler := commands.NewUpgradeHandler(a.deps.Logger, a.deps.UI)
+	handler.SetVersion(a.getBuildVersion())
+	return handler.CreateCommand()
 }
