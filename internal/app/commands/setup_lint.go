@@ -15,7 +15,6 @@ type SetupLintOptions struct {
 	Mode              string
 	OutputDir         string
 	PreCommitConfig   bool
-	GolangCIConfig    bool
 	AllowedEmojis     []string
 	Force             bool
 	SkipPreCommitHook bool
@@ -45,7 +44,7 @@ func (h *SetupLintHandler) CreateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "setup-lint [flags] [path]",
 		Short: "Automatically setup linting configuration for emoji detection",
-		Long: `Setup automated linting configuration with pre-commit hooks and golangci-lint integration.
+		Long: `Setup automated linting configuration with pre-commit hooks for emoji detection.
 
 This command configures antimoji for automated emoji linting in your development workflow.
 It supports three different modes:
@@ -58,7 +57,6 @@ Linting Modes:
 The command will:
 - Generate appropriate .antimoji.yaml configuration
 - Append antimoji hooks to existing .pre-commit-config.yaml (or create new)
-- Configure .golangci.yml for emoji linting integration
 - Setup pre-commit hooks for automated emoji cleaning
 
 Examples:
@@ -80,7 +78,6 @@ Examples:
 	cmd.Flags().StringVar(&opts.Mode, "mode", "zero-tolerance", "linting mode (zero-tolerance, allow-list, permissive)")
 	cmd.Flags().StringVar(&opts.OutputDir, "output-dir", ".", "output directory for configuration files")
 	cmd.Flags().BoolVar(&opts.PreCommitConfig, "precommit", true, "generate/update .pre-commit-config.yaml")
-	cmd.Flags().BoolVar(&opts.GolangCIConfig, "golangci", true, "generate/update .golangci.yml")
 	cmd.Flags().StringSliceVar(&opts.AllowedEmojis, "allowed-emojis", []string{"", ""}, "emojis to allow in allow-list mode")
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "overwrite existing configuration files")
 	cmd.Flags().BoolVar(&opts.SkipPreCommitHook, "skip-precommit", false, "skip pre-commit hook installation")

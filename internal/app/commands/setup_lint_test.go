@@ -43,7 +43,6 @@ func TestSetupLintHandler_CreateCommand(t *testing.T) {
 		assert.NotNil(t, flags.Lookup("mode"))
 		assert.NotNil(t, flags.Lookup("output-dir"))
 		assert.NotNil(t, flags.Lookup("precommit"))
-		assert.NotNil(t, flags.Lookup("golangci"))
 		assert.NotNil(t, flags.Lookup("allowed-emojis"))
 		assert.NotNil(t, flags.Lookup("force"))
 		assert.NotNil(t, flags.Lookup("skip-precommit"))
@@ -59,7 +58,6 @@ func TestSetupLintHandler_CreateCommand(t *testing.T) {
 		mode, _ := flags.GetString("mode")
 		outputDir, _ := flags.GetString("output-dir")
 		precommit, _ := flags.GetBool("precommit")
-		golangci, _ := flags.GetBool("golangci")
 		allowedEmojis, _ := flags.GetStringSlice("allowed-emojis")
 		force, _ := flags.GetBool("force")
 		skipPrecommit, _ := flags.GetBool("skip-precommit")
@@ -70,7 +68,6 @@ func TestSetupLintHandler_CreateCommand(t *testing.T) {
 		assert.Equal(t, "zero-tolerance", mode)
 		assert.Equal(t, ".", outputDir)
 		assert.True(t, precommit)
-		assert.True(t, golangci)
 		// The template uses empty emoji strings that render as actual emojis
 		assert.Equal(t, 2, len(allowedEmojis)) // Should have 2 default emojis
 		assert.False(t, force)
@@ -91,7 +88,6 @@ func TestSetupLintHandler_Execute(t *testing.T) {
 			Mode:              "zero-tolerance",
 			OutputDir:         ".",
 			PreCommitConfig:   true,
-			GolangCIConfig:    true,
 			AllowedEmojis:     []string{"✅", "❌"},
 			Force:             false,
 			SkipPreCommitHook: false,
@@ -140,7 +136,6 @@ func TestSetupLintHandler_Execute(t *testing.T) {
 			Mode:              "allow-list",
 			OutputDir:         "/custom/path",
 			PreCommitConfig:   false,
-			GolangCIConfig:    false,
 			AllowedEmojis:     []string{"🚀", "✨"},
 			Force:             true,
 			SkipPreCommitHook: true,
@@ -199,7 +194,6 @@ func TestSetupLintHandler_Execute(t *testing.T) {
 			Mode:              "zero-tolerance",
 			OutputDir:         ".",
 			PreCommitConfig:   true,
-			GolangCIConfig:    true,
 			AllowedEmojis:     []string{},
 			Force:             true,
 			SkipPreCommitHook: true,
@@ -224,7 +218,6 @@ func TestSetupLintOptions_Struct(t *testing.T) {
 			Mode:              "permissive",
 			OutputDir:         "/custom/output",
 			PreCommitConfig:   false,
-			GolangCIConfig:    true,
 			AllowedEmojis:     []string{"🎉", "🚀", "✨"},
 			Force:             true,
 			SkipPreCommitHook: true,
@@ -236,7 +229,6 @@ func TestSetupLintOptions_Struct(t *testing.T) {
 		assert.Equal(t, "permissive", opts.Mode)
 		assert.Equal(t, "/custom/output", opts.OutputDir)
 		assert.False(t, opts.PreCommitConfig)
-		assert.True(t, opts.GolangCIConfig)
 		assert.Equal(t, []string{"🎉", "🚀", "✨"}, opts.AllowedEmojis)
 		assert.True(t, opts.Force)
 		assert.True(t, opts.SkipPreCommitHook)

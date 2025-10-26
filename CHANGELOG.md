@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **golangci-lint Integration**: Removed golangci.yml configuration from setup-lint command
+  - Removed `--golangci` flag and `GolangCIConfig` option from setup-lint
+  - Removed `ensureBasicGolangCIConfig()` and `generateGolangCIConfigForMode()` functions
+  - Removed golangci.yml file generation and analysis functionality
+  - Updated command help text and documentation to remove golangci references
+  - antimoji is not an official golangci-lint linter and caused configuration errors
+  - Focus remains on pre-commit hooks and standalone emoji detection
+
 ## [v0.9.16] - 2025-09-08
 
 ### Fixed
@@ -145,7 +154,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Automated Configuration Generation**: 
   - Creates `.antimoji.yaml` with mode-specific profiles and settings
   - Updates `.pre-commit-config.yaml` with antimoji linting hooks
-  - Configures `.golangci.yml` for emoji linting integration
 - **Flexible Setup Options**:
   - `--allowed-emojis` flag for custom emoji allowlists
   - `--force` flag to overwrite existing configurations  
@@ -203,7 +211,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Docker Build Issues**: Resolved Docker build context problems in GoReleaser release process
 - **Cross-Platform Compatibility**: Added comprehensive Windows support for all tests and builds
-- **CI/CD Pipeline**: Fixed golangci-lint v2 configuration compatibility and workflow issues
+- **CI/CD Pipeline**: Fixed linting configuration compatibility and workflow issues
 - **File Path Handling**: Improved cross-platform file path categorization using `filepath.ToSlash()`
 - **Security Scanning**: Resolved gosec security scan integration in CI environment
 - **Build System**: Added proper Windows `.exe` binary generation in CI workflows
@@ -211,7 +219,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Error Handling**: Enhanced error message assertions for Windows vs Unix compatibility
 
 ### Changed
-- **golangci-lint**: Updated to v2 with proper configuration schema
 - **Docker Base Image**: Switched to scratch image for minimal size and better reliability
 - **CI Workflows**: Improved Windows PowerShell syntax and cross-platform shell handling
 - **Test Coverage**: Maintained 87.3% coverage across all platforms
@@ -381,7 +388,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Project Foundation**: Complete project structure and development tooling
 - **Functional Programming Core**: Result[T] type for functional error handling
 - **Development Infrastructure**: Comprehensive testing framework and CI/CD
-- **Quality Tooling**: golangci-lint configuration and code quality standards
+- **Quality Tooling**: Linting configuration and code quality standards
 - **Documentation**: Complete PRD, architecture documentation, and implementation plan
 
 ### Technical Details
