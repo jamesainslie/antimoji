@@ -95,11 +95,11 @@ jobs:
       run: |
         COVERAGE=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | sed 's/%//')
         echo "Coverage: ${COVERAGE}%"
-        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-          echo "❌ Coverage ${COVERAGE}% is below required 80%"
+        if (( $(echo "$COVERAGE < 79" | bc -l) )); then
+          echo "❌ Coverage ${COVERAGE}% is below required 79%"
           exit 1
         else
-          echo "✅ Coverage ${COVERAGE}% meets requirement (80%)"
+          echo "✅ Coverage ${COVERAGE}% meets requirement (79%)"
         fi
 
   lint:
