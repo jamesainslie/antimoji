@@ -17,7 +17,7 @@ func NewUpgradeCommand() *cobra.Command {
 	// Create handler
 	handler := commands.NewUpgradeHandler(logger, userOutput)
 
-	// Set version from build info
+	// Set version from build info (buildVersion defined in root.go)
 	handler.SetVersion(buildVersion)
 
 	// Create and return command

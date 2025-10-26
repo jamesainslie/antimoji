@@ -819,6 +819,11 @@ func (e *upgradeExecutor) upgradeSource(ctx context.Context, info InstallationIn
 		return fmt.Errorf("make build failed: %w", err)
 	}
 
+	uiOutput.Info(ctx, "Running: make install")
+	if _, err := e.commandRunner.Run(ctx, "make", "install"); err != nil {
+		return fmt.Errorf("make install failed: %w", err)
+	}
+
 	return nil
 }
 
