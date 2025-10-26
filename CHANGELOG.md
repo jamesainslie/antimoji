@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.17] - 2025-10-26
+
 ### Removed
 - **golangci-lint Integration**: Removed golangci.yml configuration from setup-lint command
   - Removed `--golangci` flag and `GolangCIConfig` option from setup-lint
@@ -15,6 +17,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated command help text and documentation to remove golangci references
   - antimoji is not an official golangci-lint linter and caused configuration errors
   - Focus remains on pre-commit hooks and standalone emoji detection
+
+### Fixed
+- **CI Stability**: Removed Windows from nightly build matrix due to persistent runner issues
+  - Windows test jobs failed consistently since October 7, 2025
+  - Race detection issues specific to GitHub Actions Windows runners
+  - Reduced nightly build matrix from 9 to 6 jobs (33% faster)
+  - Maintained coverage on Linux and macOS platforms
+  - Windows support remains in codebase; only CI testing disabled
+
+### Changed
+- **Code Reduction**: Eliminated 277 lines of problematic integration code
+- **Documentation**: Updated README and command help text for clarity
+- **Test Coverage**: Maintained at 86.3% after refactoring
 
 ## [v0.9.16] - 2025-09-08
 
