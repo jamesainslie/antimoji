@@ -83,6 +83,33 @@ docker pull ghcr.io/jamesainslie/antimoji:latest
 docker run --rm -v $(pwd):/app ghcr.io/jamesainslie/antimoji:latest scan /app
 ```
 
+## Upgrading
+
+Antimoji includes an intelligent `upgrade` command that detects how it was installed and automatically upgrades to the latest version:
+
+```bash
+# Automatic upgrade (detects installation method)
+antimoji upgrade
+
+# Check for updates without upgrading
+antimoji upgrade --check-only
+
+# Force upgrade even if already on latest version
+antimoji upgrade --force
+```
+
+### Supported Upgrade Methods
+
+The upgrade command automatically detects and supports:
+- **Homebrew**: Runs `brew upgrade antimoji`
+- **Go Install**: Runs `go install github.com/antimoji/antimoji/cmd/antimoji@latest`
+- **APT/DEB**: Runs `sudo apt update && sudo apt upgrade antimoji`
+- **YUM/RPM**: Runs `sudo yum update antimoji` or `sudo dnf update antimoji`
+- **Pacman**: Runs `sudo pacman -Syu antimoji`
+- **From Source**: Provides instructions for `git pull` and rebuild
+
+If automatic upgrade isn't available, the command provides manual upgrade instructions.
+
 ## Quick Start
 
 ### Automated Setup (Recommended)
