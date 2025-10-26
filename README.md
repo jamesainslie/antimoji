@@ -99,7 +99,6 @@ antimoji setup-lint --mode=permissive
 # The setup-lint command automatically:
 # - Generates .antimoji.yaml configuration
 # - Updates .pre-commit-config.yaml with hooks
-# - Configures .golangci.yml integration
 # - Installs pre-commit hooks (optional)
 ```
 
@@ -169,7 +168,6 @@ antimoji setup-lint --mode=allow-list \
 **What setup-lint does:**
 - ✅ Generates `.antimoji.yaml` with mode-specific profiles
 - ✅ Creates/updates `.pre-commit-config.yaml` with antimoji hooks
-- ✅ Configures `.golangci.yml` for linting integration
 - ✅ Installs pre-commit hooks (unless `--skip-precommit`)
 - ✅ Provides detailed usage instructions and next steps
 
@@ -655,7 +653,7 @@ make build-release
 
 ### Development Standards
 - 85% minimum test coverage
-- Zero golangci-lint warnings
+- Zero linting warnings
 - Functional programming principles
 - Comprehensive documentation
 

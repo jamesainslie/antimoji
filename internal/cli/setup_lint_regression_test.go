@@ -515,7 +515,6 @@ spec:
 		Mode:              "zero-tolerance",
 		OutputDir:         tempDir,
 		PreCommitConfig:   true,
-		GolangCIConfig:    true,
 		AllowedEmojis:     []string{},
 		Force:             true,
 		SkipPreCommitHook: true,
@@ -527,11 +526,9 @@ spec:
 
 	// Verify all files were created
 	preCommitConfig := filepath.Join(tempDir, ".pre-commit-config.yaml")
-	golangCIConfig := filepath.Join(tempDir, ".golangci.yml")
 	antimojiConfig := filepath.Join(tempDir, ".antimoji.yaml")
 
 	assert.FileExists(t, preCommitConfig)
-	assert.FileExists(t, golangCIConfig)
 	assert.FileExists(t, antimojiConfig)
 
 	// Critical validation: YAML syntax
@@ -562,14 +559,6 @@ spec:
 	// Validate Go hooks are included (since we have go.mod)
 	assert.Contains(t, configContent, "go-fmt", "Should include Go hooks when go.mod exists")
 
-	// Validate golangci config
-	golangCIData, err := os.ReadFile(golangCIConfig)
-	require.NoError(t, err)
-	golangCIContent := string(golangCIData)
-
-	assert.NotContains(t, golangCIContent, "profile:", "GolangCI config should not contain invalid profile field")
-	assert.Contains(t, golangCIContent, "pre-commit hooks", "Should contain note about pre-commit integration")
-	assert.NotContains(t, golangCIContent, "antimoji:", "Should not contain invalid antimoji linter")
 }
 
 // Helper function to get valid antimoji scan flags by introspection

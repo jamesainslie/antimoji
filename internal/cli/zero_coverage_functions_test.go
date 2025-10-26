@@ -106,22 +106,6 @@ func TestAnalyzePreCommitHooks_ZeroCoverage(t *testing.T) {
 	})
 }
 
-func TestAnalyzeGolangCIIntegration_ZeroCoverage(t *testing.T) {
-	tempDir := t.TempDir()
-
-	t.Run("analyzes golangci", func(t *testing.T) {
-		configContent := `linters:
-  enable: [gofmt]`
-		configPath := filepath.Join(tempDir, "golangci.yml")
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
-		require.NoError(t, err)
-
-		assert.NotPanics(t, func() {
-			analyzeGolangCIIntegration(configPath, &ReviewData{})
-		})
-	})
-}
-
 func TestAnalyzeCodebaseImpact_ZeroCoverage(t *testing.T) {
 	tempDir := t.TempDir()
 

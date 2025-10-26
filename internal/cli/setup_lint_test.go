@@ -232,48 +232,6 @@ func TestGeneratePreCommitConfigForMode(t *testing.T) {
 	}
 }
 
-func TestGenerateGolangCIConfigForMode(t *testing.T) {
-	tests := []struct {
-		mode     LintMode
-		contains []string
-	}{
-		{
-			mode: ZeroToleranceMode,
-			contains: []string{
-				"antimoji:",
-				"mode: zero-tolerance",
-				"config: .antimoji.yaml",
-			},
-		},
-		{
-			mode: AllowListMode,
-			contains: []string{
-				"antimoji:",
-				"mode: allow-list",
-				"config: .antimoji.yaml",
-			},
-		},
-		{
-			mode: PermissiveMode,
-			contains: []string{
-				"antimoji:",
-				"mode: permissive",
-				"config: .antimoji.yaml",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(string(tt.mode), func(t *testing.T) {
-			config := generateGolangCIConfigForMode(tt.mode)
-
-			for _, expected := range tt.contains {
-				assert.Contains(t, config, expected)
-			}
-		})
-	}
-}
-
 func TestRunSetupLintValidation(t *testing.T) {
 	// Create temporary directory for testing
 	tempDir := t.TempDir()
@@ -461,62 +419,6 @@ func TestUpdatePreCommitConfig(t *testing.T) {
 	}
 }
 
-func TestEnsureBasicGolangCIConfig(t *testing.T) {
-	tempDir := t.TempDir()
-
-	tests := []struct {
-		name      string
-		mode      LintMode
-		opts      *SetupLintOptions
-		setup     func()
-		expectErr bool
-	}{
-		{
-			name: "create new config",
-			mode: PermissiveMode,
-			opts: &SetupLintOptions{
-				Force: true,
-			},
-			setup:     func() {},
-			expectErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Set quiet mode for tests
-			originalQuiet := quiet
-			quiet = true
-			defer func() { quiet = originalQuiet }()
-
-			tt.setup()
-
-			err := ensureBasicGolangCIConfig(tempDir, tt.opts)
-
-			if tt.expectErr {
-				require.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-
-				// Check that file was created/updated
-				configPath := filepath.Join(tempDir, ".golangci.yml")
-				assert.FileExists(t, configPath)
-
-				data, err := os.ReadFile(configPath)
-				require.NoError(t, err)
-				content := string(data)
-
-				// Test for basic golangci-lint structure (no antimoji linter)
-				assert.Contains(t, content, "version: \"2\"")
-				assert.Contains(t, content, "errcheck")
-				assert.Contains(t, content, "govet")
-				assert.Contains(t, content, "pre-commit hooks")
-				assert.NotContains(t, content, "antimoji:") // Should not contain invalid linter
-			}
-		})
-	}
-}
-
 // Integration test for the complete setup-lint workflow
 func TestSetupLintIntegration(t *testing.T) {
 	tempDir := t.TempDir()
@@ -535,7 +437,6 @@ func TestSetupLintIntegration(t *testing.T) {
 				Mode:              string(mode),
 				OutputDir:         tempDir,
 				PreCommitConfig:   true,
-				GolangCIConfig:    true,
 				AllowedEmojis:     []string{"✅", "❌"},
 				Force:             true,
 				SkipPreCommitHook: true, // Skip since pre-commit might not be installed
@@ -548,11 +449,9 @@ func TestSetupLintIntegration(t *testing.T) {
 			// Check that all expected files were created
 			antimojiConfig := filepath.Join(tempDir, ".antimoji.yaml")
 			preCommitConfig := filepath.Join(tempDir, ".pre-commit-config.yaml")
-			golangCIConfig := filepath.Join(tempDir, ".golangci.yml")
 
 			assert.FileExists(t, antimojiConfig)
 			assert.FileExists(t, preCommitConfig)
-			assert.FileExists(t, golangCIConfig)
 
 			// Verify antimoji config content
 			data, err := os.ReadFile(antimojiConfig)
@@ -572,14 +471,6 @@ func TestSetupLintIntegration(t *testing.T) {
 			}
 			assert.Contains(t, preCommitContent, string(mode))
 
-			// Verify golangci config content (should NOT contain antimoji linter)
-			data, err = os.ReadFile(golangCIConfig)
-			require.NoError(t, err)
-			golangCIContent := string(data)
-			assert.Contains(t, golangCIContent, "version: \"2\"")
-			assert.Contains(t, golangCIContent, "errcheck")
-			assert.Contains(t, golangCIContent, "pre-commit hooks")
-			assert.NotContains(t, golangCIContent, "antimoji:") // Should not contain invalid linter
 		})
 	}
 }
@@ -589,7 +480,6 @@ func TestPrintSetupSummary(t *testing.T) {
 	opts := &SetupLintOptions{
 		AllowedEmojis:   []string{"✅", "❌"},
 		PreCommitConfig: true,
-		GolangCIConfig:  true,
 	}
 
 	// Set quiet mode to false to test output
