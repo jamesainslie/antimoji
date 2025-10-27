@@ -1,6 +1,6 @@
 module github.com/antimoji/antimoji
 
-go 1.23.0
+go 1.24.0
 
 require (
 	github.com/dustin/go-humanize v1.0.1
@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/otel/log v0.14.0
 	go.opentelemetry.io/otel/sdk v1.38.0
 	go.opentelemetry.io/otel/sdk/log v0.14.0
+	golang.org/x/mod v0.12.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

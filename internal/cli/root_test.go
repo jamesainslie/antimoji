@@ -97,14 +97,14 @@ func TestRootCommand(t *testing.T) {
 		outputStr := output.String()
 		assert.Contains(t, outputStr, "antimoji version")
 
-		// Validate that version follows semantic versioning pattern (e.g., "1.2.3" or "0.9.4")
-		semverPattern := `\d+\.\d+\.\d+`
+		// Validate that version follows semantic versioning pattern
+		// Accepts: "1.2.3", "0.9.4", "0.0.0-dev" (development builds)
+		semverPattern := `\d+\.\d+\.\d+(-\w+)?`
 		assert.Regexp(t, semverPattern, outputStr, "Version should follow semantic versioning format")
 
-		// Ensure version is not empty or placeholder
+		// Ensure version is not empty or just a placeholder
 		assert.NotContains(t, outputStr, "unknown")
-		assert.NotContains(t, outputStr, "dev")
-		assert.NotContains(t, outputStr, "0.0.0")
+		// Note: We allow "dev" for development builds (e.g., "0.0.0-dev")
 	})
 }
 

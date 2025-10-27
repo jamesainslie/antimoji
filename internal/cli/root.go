@@ -22,8 +22,12 @@ var (
 	logLevel    string
 	logFormat   string
 
-	// Build information (will be set by main package)
-	buildVersion   = "0.9.16"
+	// Build information - should be overridden at build time via ldflags:
+	//   -X github.com/antimoji/antimoji/internal/cli.buildVersion=v1.0.0
+	//   -X github.com/antimoji/antimoji/internal/cli.buildTime=2024-01-01T00:00:00Z
+	//   -X github.com/antimoji/antimoji/internal/cli.buildGitCommit=abc123
+	// Default values are used for development builds.
+	buildVersion   = "0.0.0-dev"
 	buildTime      = "unknown"
 	buildGitCommit = "unknown"
 )
@@ -38,7 +42,7 @@ from code files, markdown documents, and other text-based artifacts.
 
 Built with Go using functional programming principles, Antimoji provides:
 - Unicode emoji detection across all major ranges
-- Text emoticon detection (:), :D, :(, etc.)
+- Text emoticon detection (, , , etc.)
 - Custom emoji pattern detection (:party:, :thumbsup:)
 - Configurable allowlists and ignore patterns
 - High-performance concurrent processing
@@ -63,6 +67,7 @@ Built with Go using functional programming principles, Antimoji provides:
 	cmd.AddCommand(NewGenerateCommand())
 	cmd.AddCommand(NewSetupLintCommand())
 	cmd.AddCommand(NewVersionCommand())
+	cmd.AddCommand(NewUpgradeCommand())
 
 	// Set up configuration and logging
 	// Initialize logging and user output before any command execution
