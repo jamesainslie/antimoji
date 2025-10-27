@@ -6,7 +6,8 @@ import (
 	"sync"
 )
 
-// mockCore holds the shared state for all derived MockUserOutput instances.
+// mockCore holds the state for a MockUserOutput instance.
+// Each MockUserOutput gets its own core; they are not shared between instances.
 type mockCore struct {
 	mu       sync.RWMutex
 	messages []OutputMessage
