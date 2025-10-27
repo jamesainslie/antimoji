@@ -11,13 +11,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/antimoji/antimoji/internal/observability/logging"
 	"github.com/antimoji/antimoji/internal/ui"
 	"github.com/spf13/cobra"
+	"golang.org/x/mod/semver"
 )
 
 // InstallMethod represents how antimoji was installed
@@ -34,8 +34,10 @@ const (
 	InstallMethodYUM InstallMethod = "yum"
 	// InstallMethodPacman indicates installation via Pacman package manager
 	InstallMethodPacman InstallMethod = "pacman"
-	// InstallMethodDocker indicates running in a container
+	// InstallMethodDocker indicates running in a Docker container
 	InstallMethodDocker InstallMethod = "docker"
+	// InstallMethodContainer indicates running in a container (Kubernetes, etc.)
+	InstallMethodContainer InstallMethod = "container"
 	// InstallMethodSource indicates installation from source
 	InstallMethodSource InstallMethod = "source"
 	// InstallMethodManual indicates manual binary installation
@@ -108,7 +110,7 @@ func NewUpgradeHandler(logger logging.Logger, uiOutput ui.UserOutput) *UpgradeHa
 	return &UpgradeHandler{
 		logger:  logger,
 		ui:      uiOutput,
-		version: "0.9.16", // Will be set from build info
+		version: "dev", // Overridden by SetVersion from build info
 		detector: &installationDetector{
 			detectors: []InstallDetector{
 				&homebrewDetector{commandRunner: cmdRunner},
@@ -256,10 +258,14 @@ func (h *UpgradeHandler) showManualUpgradeInstructions(ctx context.Context, meth
 	case InstallMethodDocker:
 		h.ui.Info(ctx, "  Pull the latest Docker image:")
 		h.ui.Info(ctx, "    docker pull ghcr.io/jamesainslie/antimoji:latest")
+	case InstallMethodContainer:
+		h.ui.Info(ctx, "  Update container image in your orchestration platform:")
+		h.ui.Info(ctx, "    docker pull ghcr.io/jamesainslie/antimoji:latest")
+		h.ui.Info(ctx, "  Or update your Kubernetes deployment/pod spec")
 	case InstallMethodSource:
 		h.ui.Info(ctx, "  Navigate to your source directory and update:")
 		h.ui.Info(ctx, "    cd /path/to/antimoji")
-		h.ui.Info(ctx, "    git pull origin main")
+		h.ui.Info(ctx, "    git pull")
 		h.ui.Info(ctx, "    make build")
 		h.ui.Info(ctx, "    sudo make install")
 	case InstallMethodManual:
@@ -267,7 +273,7 @@ func (h *UpgradeHandler) showManualUpgradeInstructions(ctx context.Context, meth
 		h.ui.Info(ctx, "    https://github.com/jamesainslie/antimoji/releases/latest")
 		h.ui.Info(ctx, "  Or use one of the package managers:")
 		h.ui.Info(ctx, "    brew install antimoji")
-		h.ui.Info(ctx, "    go install github.com/antimoji/antimoji/cmd/antimoji@latest")
+		h.ui.Info(ctx, "    go install github.com/jamesainslie/antimoji/cmd/antimoji@latest")
 	default:
 		h.ui.Info(ctx, "  Visit the GitHub releases page:")
 		h.ui.Info(ctx, "    https://github.com/jamesainslie/antimoji/releases/latest")
@@ -284,75 +290,26 @@ func NewVersionInfo(current, latest string) VersionInfo {
 	}
 }
 
-// compareVersions compares two semantic versions
+// compareVersions compares two semantic versions using Go's semver library
 // Returns: -1 if v1 < v2, 0 if equal, 1 if v1 > v2
 func compareVersions(v1, v2 string) int {
-	// Strip 'v' prefix
-	v1 = strings.TrimPrefix(v1, "v")
-	v2 = strings.TrimPrefix(v2, "v")
-
-	// Handle dev version
-	if v1 == "dev" || v1 == "unknown" {
-		return -1
-	}
-	if v2 == "dev" || v2 == "unknown" {
-		return 1
-	}
-
-	parts1 := strings.Split(v1, ".")
-	parts2 := strings.Split(v2, ".")
-
-	for i := 0; i < len(parts1) && i < len(parts2); i++ {
-		// Extract numeric part
-		num1 := extractNumber(parts1[i])
-		num2 := extractNumber(parts2[i])
-
-		if num1 < num2 {
-			return -1
+	// Normalize versions for semver comparison
+	norm := func(v string) string {
+		// Handle special cases
+		if v == "" || v == "dev" || v == "unknown" {
+			return "v0.0.0-0" // Lowest possible version
 		}
-		if num1 > num2 {
-			return 1
+		// Ensure v prefix
+		if !strings.HasPrefix(v, "v") {
+			v = "v" + v
 		}
-
-		// If numbers are equal, check for suffixes (e.g., "16" vs "16-patch1")
-		// Version with suffix is considered newer
-		hasSuffix1 := strings.ContainsAny(parts1[i], "-+")
-		hasSuffix2 := strings.ContainsAny(parts2[i], "-+")
-
-		if !hasSuffix1 && hasSuffix2 {
-			// v1 has no suffix, v2 has suffix -> v1 < v2
-			return -1
-		}
-		if hasSuffix1 && !hasSuffix2 {
-			// v1 has suffix, v2 has no suffix -> v1 > v2
-			return 1
-		}
-		// If both have suffixes or neither have suffixes, continue to next part
+		return v
 	}
 
-	// If all parts equal, longer version is considered newer
-	if len(parts1) < len(parts2) {
-		return -1
-	}
-	if len(parts1) > len(parts2) {
-		return 1
-	}
+	sv1 := norm(v1)
+	sv2 := norm(v2)
 
-	return 0
-}
-
-// extractNumber extracts the numeric part from a version component
-func extractNumber(s string) int {
-	// Handle pre-release versions (e.g., "16-patch1" -> 16)
-	if idx := strings.IndexAny(s, "-+"); idx != -1 {
-		s = s[:idx]
-	}
-
-	num, err := strconv.Atoi(s)
-	if err != nil {
-		return 0
-	}
-	return num
+	return semver.Compare(sv1, sv2)
 }
 
 // installationDetector orchestrates multiple detectors
@@ -362,18 +319,13 @@ type installationDetector struct {
 
 // DetectInstallation runs all detectors and returns the best result
 func (d *installationDetector) DetectInstallation(ctx context.Context, binaryPath string) (InstallationInfo, error) {
-	type result struct {
-		info DetectionResult
-		err  error
-	}
-
-	results := make(chan result, len(d.detectors))
+	results := make(chan DetectionResult, len(d.detectors))
 
 	// Run all detectors in parallel
 	for _, detector := range d.detectors {
 		go func(det InstallDetector) {
 			info := det.Detect(ctx, binaryPath)
-			results <- result{info: info, err: nil}
+			results <- info
 		}(detector)
 	}
 
@@ -381,8 +333,8 @@ func (d *installationDetector) DetectInstallation(ctx context.Context, binaryPat
 	var detectionResults []DetectionResult
 	for i := 0; i < len(d.detectors); i++ {
 		res := <-results
-		if res.err == nil && res.info.Confidence > 40 {
-			detectionResults = append(detectionResults, res.info)
+		if res.Confidence > 40 {
+			detectionResults = append(detectionResults, res)
 		}
 	}
 
@@ -498,7 +450,9 @@ func (d *goInstallDetector) Detect(ctx context.Context, binaryPath string) Detec
 
 	// Check build info - this is the primary indicator
 	if output, err := d.commandRunner.Run(ctx, "go", "version", "-m", binaryPath); err == nil {
-		if strings.Contains(output, "github.com/antimoji/antimoji/cmd/antimoji") {
+		// Check for both old and new module paths for backward compatibility
+		if strings.Contains(output, "github.com/jamesainslie/antimoji/cmd/antimoji") ||
+			strings.Contains(output, "github.com/antimoji/antimoji/cmd/antimoji") {
 			confidence += 70
 			metadata["go_module"] = "true"
 
@@ -508,11 +462,21 @@ func (d *goInstallDetector) Detect(ctx context.Context, binaryPath string) Detec
 		}
 	}
 
-	// Check if in GOPATH/bin or GOBIN
+	// Check if in GOBIN or GOPATH/bin
 	if gobinOutput, err := d.commandRunner.Run(ctx, "go", "env", "GOBIN"); err == nil {
 		gobin := strings.TrimSpace(gobinOutput)
 		if gobin != "" && strings.Contains(binaryPath, gobin) {
 			confidence += 10
+			metadata["gobin"] = "true"
+		}
+	}
+
+	// Also check GOPATH/bin for installations where GOBIN is not set
+	if gopathOutput, err := d.commandRunner.Run(ctx, "go", "env", "GOPATH"); err == nil {
+		gopath := strings.TrimSpace(gopathOutput)
+		if gopath != "" && strings.Contains(binaryPath, filepath.Join(gopath, "bin")) {
+			confidence += 10
+			metadata["gopath_bin"] = "true"
 		}
 	}
 
@@ -632,23 +596,36 @@ func (d *dockerDetector) Detect(ctx context.Context, binaryPath string) Detectio
 	confidence := 0
 	metadata := make(map[string]string)
 
+	// Check for Kubernetes first (more specific)
+	if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
+		return DetectionResult{
+			Method:     InstallMethodContainer,
+			Confidence: 85,
+			Metadata:   map[string]string{"container_type": "kubernetes"},
+			CanUpgrade: false, // Cannot auto-upgrade in container
+		}
+	}
+
 	// Check for Docker environment markers
 	if d.fileChecker.Exists("/.dockerenv") {
 		confidence = 80
-		metadata["container"] = "docker"
+		metadata["container_type"] = "docker"
 	}
 
-	// Check Kubernetes
-	if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
-		confidence = 80
-		metadata["container"] = "kubernetes"
+	if confidence > 0 {
+		return DetectionResult{
+			Method:     InstallMethodDocker,
+			Confidence: confidence,
+			Metadata:   metadata,
+			CanUpgrade: false, // Cannot auto-upgrade in container
+		}
 	}
 
 	return DetectionResult{
 		Method:     InstallMethodDocker,
-		Confidence: confidence,
+		Confidence: 0,
 		Metadata:   metadata,
-		CanUpgrade: false, // Cannot auto-upgrade in container
+		CanUpgrade: false,
 	}
 }
 
@@ -747,8 +724,8 @@ func (e *upgradeExecutor) upgradeHomebrew(ctx context.Context, uiOutput ui.UserO
 }
 
 func (e *upgradeExecutor) upgradeGoInstall(ctx context.Context, uiOutput ui.UserOutput) error {
-	uiOutput.Info(ctx, "Running: go install github.com/antimoji/antimoji/cmd/antimoji@latest")
-	output, err := e.commandRunner.Run(ctx, "go", "install", "github.com/antimoji/antimoji/cmd/antimoji@latest")
+	uiOutput.Info(ctx, "Running: go install github.com/jamesainslie/antimoji/cmd/antimoji@latest")
+	output, err := e.commandRunner.Run(ctx, "go", "install", "github.com/jamesainslie/antimoji/cmd/antimoji@latest")
 	if err != nil {
 		return fmt.Errorf("go install failed: %w\nOutput: %s", err, output)
 	}
@@ -809,9 +786,34 @@ func (e *upgradeExecutor) upgradeSource(ctx context.Context, info InstallationIn
 		return fmt.Errorf("failed to change to source directory: %w", err)
 	}
 
-	uiOutput.Info(ctx, "Running: git pull origin main")
-	if _, err := e.commandRunner.Run(ctx, "git", "pull", "origin", "main"); err != nil {
-		return fmt.Errorf("git pull failed: %w", err)
+	// Detect current branch
+	currentBranch, err := e.commandRunner.Run(ctx, "git", "rev-parse", "--abbrev-ref", "HEAD")
+	if err != nil {
+		return fmt.Errorf("failed to detect current git branch: %w", err)
+	}
+	currentBranch = strings.TrimSpace(currentBranch)
+
+	// Detect upstream tracking branch
+	upstream, err := e.commandRunner.Run(ctx, "git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+	upstreamExists := err == nil && strings.TrimSpace(upstream) != ""
+
+	// Perform git pull using detected configuration
+	if upstreamExists {
+		// Use plain git pull to respect configured upstream
+		uiOutput.Info(ctx, "Running: git pull (using configured upstream)")
+		if _, err := e.commandRunner.Run(ctx, "git", "pull"); err != nil {
+			return fmt.Errorf("git pull failed: %w", err)
+		}
+	} else {
+		// No upstream configured, try origin with current branch
+		uiOutput.Info(ctx, "Running: git pull origin %s", currentBranch)
+		if _, err := e.commandRunner.Run(ctx, "git", "pull", "origin", currentBranch); err != nil {
+			// If that fails, try a plain git pull as fallback
+			uiOutput.Info(ctx, "Retrying with: git pull")
+			if _, err := e.commandRunner.Run(ctx, "git", "pull"); err != nil {
+				return fmt.Errorf("git pull failed (no upstream configured): %w", err)
+			}
+		}
 	}
 
 	uiOutput.Info(ctx, "Running: make build")

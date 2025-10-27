@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -403,7 +404,12 @@ func TestCompareVersions(t *testing.T) {
 		{"with v prefix", "v0.9.16", "v0.9.16", 0},
 		{"mixed v prefix", "v0.9.16", "0.9.16", 0},
 		{"dev version", "dev", "0.9.16", -1},
-		{"patch version", "0.9.16", "0.9.16-patch1", -1},
+		{"stable newer than prerelease", "0.9.16", "0.9.16-patch1", 1},  // stable > pre-release per semver
+		{"prerelease older than stable", "0.9.16-rc1", "0.9.16", -1},    // pre-release < stable per semver
+		{"alpha vs beta prerelease", "0.9.16-alpha", "0.9.16-beta", -1}, // alpha < beta per semver
+		{"stable vs alpha", "1.0.0", "1.0.0-alpha", 1},                  // stable > alpha
+		{"beta vs stable", "2.0.0-beta", "2.0.0", -1},                   // beta < stable
+		{"rc vs stable", "1.5.0-rc1", "1.5.0", -1},                      // release candidate < stable
 	}
 
 	for _, tt := range tests {
@@ -446,6 +452,9 @@ func TestUpgradeHandlerCreateCommand(t *testing.T) {
 
 type mockCommandRunner struct {
 	commands map[string]mockCommandResult
+	outputs  map[string]string // New style: command -> output
+	errors   map[string]error  // New style: command -> error
+	called   []string          // Track which commands were called
 }
 
 type mockCommandResult struct {
@@ -459,11 +468,45 @@ func (m *mockCommandRunner) Run(ctx context.Context, name string, args ...string
 	for _, arg := range args {
 		key += " " + arg
 	}
+
+	// Track that this command was called
+	if m.called == nil {
+		m.called = []string{}
+	}
+	m.called = append(m.called, key)
+
+	// Try new style maps first
+	if m.outputs != nil || m.errors != nil {
+		output := ""
+		if m.outputs != nil {
+			output = m.outputs[key]
+		}
+		err := error(nil)
+		if m.errors != nil {
+			err = m.errors[key]
+		}
+		return output, err
+	}
+
+	// Fall back to old style
 	result, ok := m.commands[key]
 	if !ok {
 		return "", errors.New("command not found")
 	}
 	return result.output, result.err
+}
+
+func (m *mockCommandRunner) WasCalled(name string, args ...string) bool {
+	key := name
+	for _, arg := range args {
+		key += " " + arg
+	}
+	for _, called := range m.called {
+		if called == key {
+			return true
+		}
+	}
+	return false
 }
 
 type mockFileChecker struct {
@@ -493,4 +536,209 @@ func (m *mockDetector) Name() string {
 
 func (m *mockDetector) Detect(ctx context.Context, binaryPath string) DetectionResult {
 	return m.result
+}
+
+// TestUpgradeSourceWithUpstream tests upgradeSource when upstream is configured
+func TestUpgradeSourceWithUpstream(t *testing.T) {
+	ctx := context.Background()
+	mockUI := ui.NewMockUserOutput()
+
+	// Mock command runner that simulates a repo with upstream configured
+	mockRunner := &mockCommandRunner{
+		outputs: map[string]string{
+			"git rev-parse --abbrev-ref HEAD":                      "feature-branch\n",
+			"git rev-parse --abbrev-ref --symbolic-full-name @{u}": "origin/feature-branch\n",
+			"git pull":     "Already up to date.\n",
+			"make build":   "Build successful\n",
+			"make install": "Install successful\n",
+		},
+	}
+
+	executor := &upgradeExecutor{commandRunner: mockRunner}
+
+	info := InstallationInfo{
+		Method: InstallMethodSource,
+		Path:   "/tmp/antimoji/bin/antimoji",
+		Metadata: map[string]string{
+			"git_repo": "true",
+		},
+	}
+
+	// Create temporary directory structure
+	tmpDir := t.TempDir()
+	binDir := filepath.Join(tmpDir, "bin")
+	err := os.MkdirAll(binDir, 0755)
+	require.NoError(t, err)
+
+	info.Path = filepath.Join(binDir, "antimoji")
+
+	// Change to temp dir for test
+	originalDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() {
+		_ = os.Chdir(originalDir)
+	}()
+
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	// Execute upgrade
+	err = executor.upgradeSource(ctx, info, mockUI)
+	require.NoError(t, err)
+
+	// Verify git pull was called (not git pull origin <branch>)
+	assert.True(t, mockRunner.WasCalled("git", "pull"))
+	assert.False(t, mockRunner.WasCalled("git", "pull", "origin", "feature-branch"))
+}
+
+// TestUpgradeSourceWithoutUpstream tests upgradeSource when no upstream is configured
+func TestUpgradeSourceWithoutUpstream(t *testing.T) {
+	ctx := context.Background()
+	mockUI := ui.NewMockUserOutput()
+
+	// Mock command runner that simulates a repo without upstream configured
+	mockRunner := &mockCommandRunner{
+		outputs: map[string]string{
+			"git rev-parse --abbrev-ref HEAD": "main\n",
+			"git pull origin main":            "Already up to date.\n",
+			"make build":                      "Build successful\n",
+			"make install":                    "Install successful\n",
+		},
+		errors: map[string]error{
+			"git rev-parse --abbrev-ref --symbolic-full-name @{u}": errors.New("no upstream configured"),
+		},
+	}
+
+	executor := &upgradeExecutor{commandRunner: mockRunner}
+
+	info := InstallationInfo{
+		Method: InstallMethodSource,
+		Path:   "/tmp/antimoji/bin/antimoji",
+		Metadata: map[string]string{
+			"git_repo": "true",
+		},
+	}
+
+	// Create temporary directory structure
+	tmpDir := t.TempDir()
+	binDir := filepath.Join(tmpDir, "bin")
+	err := os.MkdirAll(binDir, 0755)
+	require.NoError(t, err)
+
+	info.Path = filepath.Join(binDir, "antimoji")
+
+	// Change to temp dir for test
+	originalDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() {
+		_ = os.Chdir(originalDir)
+	}()
+
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	// Execute upgrade
+	err = executor.upgradeSource(ctx, info, mockUI)
+	require.NoError(t, err)
+
+	// Verify git pull origin <branch> was called
+	assert.True(t, mockRunner.WasCalled("git", "pull", "origin", "main"))
+}
+
+// TestUpgradeSourceBranchDetectionFailure tests error handling when branch detection fails
+func TestUpgradeSourceBranchDetectionFailure(t *testing.T) {
+	ctx := context.Background()
+	mockUI := ui.NewMockUserOutput()
+
+	// Mock command runner that fails to detect branch
+	mockRunner := &mockCommandRunner{
+		errors: map[string]error{
+			"git rev-parse --abbrev-ref HEAD": errors.New("not a git repository"),
+		},
+	}
+
+	executor := &upgradeExecutor{commandRunner: mockRunner}
+
+	info := InstallationInfo{
+		Method: InstallMethodSource,
+		Path:   "/tmp/antimoji/bin/antimoji",
+		Metadata: map[string]string{
+			"git_repo": "true",
+		},
+	}
+
+	// Create temporary directory structure
+	tmpDir := t.TempDir()
+	binDir := filepath.Join(tmpDir, "bin")
+	err := os.MkdirAll(binDir, 0755)
+	require.NoError(t, err)
+
+	info.Path = filepath.Join(binDir, "antimoji")
+
+	// Change to temp dir for test
+	originalDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() {
+		_ = os.Chdir(originalDir)
+	}()
+
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	// Execute upgrade - should fail
+	err = executor.upgradeSource(ctx, info, mockUI)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to detect current git branch")
+}
+
+// TestUpgradeSourceNonDefaultBranch tests upgrade from a non-default branch
+func TestUpgradeSourceNonDefaultBranch(t *testing.T) {
+	ctx := context.Background()
+	mockUI := ui.NewMockUserOutput()
+
+	// Mock command runner for a non-default branch with upstream
+	mockRunner := &mockCommandRunner{
+		outputs: map[string]string{
+			"git rev-parse --abbrev-ref HEAD":                      "develop\n",
+			"git rev-parse --abbrev-ref --symbolic-full-name @{u}": "origin/develop\n",
+			"git pull":     "Already up to date.\n",
+			"make build":   "Build successful\n",
+			"make install": "Install successful\n",
+		},
+	}
+
+	executor := &upgradeExecutor{commandRunner: mockRunner}
+
+	info := InstallationInfo{
+		Method: InstallMethodSource,
+		Path:   "/tmp/antimoji/bin/antimoji",
+		Metadata: map[string]string{
+			"git_repo": "true",
+		},
+	}
+
+	// Create temporary directory structure
+	tmpDir := t.TempDir()
+	binDir := filepath.Join(tmpDir, "bin")
+	err := os.MkdirAll(binDir, 0755)
+	require.NoError(t, err)
+
+	info.Path = filepath.Join(binDir, "antimoji")
+
+	// Change to temp dir for test
+	originalDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() {
+		_ = os.Chdir(originalDir)
+	}()
+
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	// Execute upgrade
+	err = executor.upgradeSource(ctx, info, mockUI)
+	require.NoError(t, err)
+
+	// Verify correct commands were called
+	assert.True(t, mockRunner.WasCalled("git", "pull"))
 }
